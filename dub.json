@@ -1,0 +1,8 @@
+{
+	"name": "gland",
+	"description": "OpenGL middleware for D.",
+	"copyright": "Copyright © 2016, profan",
+	"authors": ["profan"],
+	"dependencies": {
+	}
+}
