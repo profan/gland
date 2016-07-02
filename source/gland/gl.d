@@ -4,31 +4,63 @@ import glad.gl.enums;
 import glad.gl.types;
 import glad.gl.funcs;
 
-template typeToGL(T) {
+/*
+ * UDA's for defining stuff in vertex structures.
+*/
+
+struct VertexAttribDivisor {
+
+	GLuint divisor;
+
+} // VertexAttribDivisor
+
+// attribute normalization in structures
+struct Normalized {
+
+	bool is_normalized;
+
+} // Normalized
+
+template TypeToGL(T) {
 
 	import std.format : format;
 
 	static if (is (T == float)) {
-		enum TypeToGLenum = GL_FLOAT;
+		enum TypeToGL = GL_FLOAT;
 	} else static if (is (T == double)) {
-		enum TypeToGLenum = GL_DOUBLE;
+		enum TypeToGL = GL_DOUBLE;
 	} else static if (is (T == int)) {
-		enum TypeToGLenum = GL_INT;
+		enum TypeToGL = GL_INT;
 	} else static if (is (T == uint)) {
-		enum TypeToGLenum = GL_UNSIGNED_INT;
+		enum TypeToGL = GL_UNSIGNED_INT;
 	} else static if (is (T == short)) {
-		enum TypeToGLenum = GL_SHORT;
+		enum TypeToGL = GL_SHORT;
 	} else static if (is (T == ushort)) {
-		enum TypeToGLenum = GL_UNSIGNED_SHORT;
+		enum TypeToGL = GL_UNSIGNED_SHORT;
 	} else static if (is (T == byte)) {
-		enum TypeToGLenum = GL_BYTE;
+		enum TypeToGL = GL_BYTE;
 	} else static if (is (T == ubyte) || is(T == void)) {
-		enum TypeToGLenum = GL_UNSIGNED_BYTE;
+		enum TypeToGL = GL_UNSIGNED_BYTE;
 	} else {
 		static assert (0, format("No type conversion found for: %s to OpenGL equivalent", T.stringof));
 	}
 
-} //typeToGL
+} // typeToGL
+
+// corresponds to targets to which OpenGL buffer objects are bound
+enum BufferTarget {
+
+	ArrayBuffer = GL_ARRAY_BUFFER,
+	CopyReadBuffer = GL_COPY_READ_BUFFER,
+	CopyWriteBuffer = GL_COPY_WRITE_BUFFER,
+	ElementArrayBuffer = GL_ELEMENT_ARRAY_BUFFER,
+	PixelPackBuffer = GL_PIXEL_PACK_BUFFER,
+	PixelUnpackBuffer = GL_PIXEL_UNPACK_BUFFER,
+	TextureBuffer = GL_TEXTURE_BUFFER,
+	TransformFeedbackBuffer = GL_TRANSFORM_FEEDBACK_BUFFER,
+	UniformBuffer = GL_UNIFORM_BUFFER
+
+} // BufferTarget
 
 // corresponds to usage pattern for given data
 enum DrawType {
@@ -42,7 +74,7 @@ enum DrawType {
 	StreamDraw = GL_STREAM_DRAW,
 	StreamRead = GL_STREAM_READ
 
-} //DrawType
+} // DrawType
 
 // corresponds to OpenGL primitives
 enum DrawPrimitive {
@@ -57,7 +89,7 @@ enum DrawPrimitive {
 	TriangleStrip = GL_TRIANGLE_STRIP,
 	TriangleFan = GL_TRIANGLE_FAN
 
-} //DrawPrimitive
+} // DrawPrimitive
 
 // corresponds to glBlendEquation
 enum BlendEquation {
@@ -99,9 +131,8 @@ enum BlendFunc {
 // DrawParams state, is sent with every "draw" command in order to *never* have any manual state modification.
 struct DrawParams {
 
+	BlendFunc blend_src, blend_dst;
 	BlendEquation blend_eq;
-
-	BlendFunc blend_func;
 
 } // DrawParams
 
@@ -112,22 +143,78 @@ struct DrawParams {
 */
 struct TDrawParams {
 
-} //TDrawParams
+} // TDrawParams
 
 struct Shader {
 
-} //Shader
+} // Shader
 
 struct Vertex {
 
-} //Vertex
+} // Vertex
 
-struct VertexArray {
+struct VertexArray(VT) {
 
-} //VertexArray
+	private {
+
+		GLuint id;
+
+	}
+
+	@property
+	ref GLuint handle() {
+		return id;
+	} // handle
+
+} // VertexArray
+
+struct VertexBuffer(VT) {
+
+	private {
+
+		GLuint id;
+
+		uint num_vertices;
+		DrawPrimitive prim_type;
+
+	}
+
+	@property
+	ref GLuint handle() {
+		return id;
+	} // handle
+
+} // VertexBuffer
+
+/* UFCS functions for drawing, uploading data, etc. */
+
+nothrow @nogc
+auto allocate(VertexType)(in VertexType[] vertices, DrawType draw_type, DrawPrimitive prim_type = DrawPrimitive.Triangles) {
+
+	VertexArray!VertexType vao;
+	VertexBuffer!VertexType vbo;
+
+	vao.num_vertices = cast(uint)vertices.length;
+	vao.prim_type = prim_type;
+
+	glGenVertexArrays(1, &vao.handle);
+	vao.bindVertexArray();
+
+	glGenBuffers(1, vao.handle);
+
+} // allocate
+
+nothrow @nogc
+void draw(VertexType)(ref VertexArray!VertexType vao, DrawParams params) {
+
+} // draw
+
+/* Functions for creating structures and such. */
 
 struct Renderer {
 static:
+
+	/* data bindings */
 
 	//GL_ARRAY_BUFER_BINDING
 	GLuint array_buffer_binding;
@@ -138,11 +225,16 @@ static:
 	//GL_VERTEX_ARRAY_BUFFER_BINDING
 	GLuint vertex_array_buffer_binding;
 
-	//GL_TEXTURE_2D
-	bool texture_2d;
+	//GL_UNIFORM_BUFFER
+	GLuint uniform_buffer_binding;
 
 	//GL_TEXTURE_BINDING_2D
 	GLuint texture_binding_2d;
+
+	/* misc state */
+
+	//GL_TEXTURE_2D
+	bool texture_2d;
 
 	//GL_SCISSOR_TEST
 	bool scissor_test;
@@ -194,21 +286,69 @@ static:
 
 private:
 
-	bool bindVertexArray(GLuint id) {
+	bool isBound(alias name)() {
 
-		if (vertex_array_buffer_binding == id) {
+		return name != 0;
+
+	} // isBound
+
+	bool isAnyBound(BufferTarget type) {
+
+		import std.stdio : writefln;
+
+		bool result = false;
+
+		final switch (type) with (BufferTarget) {
+
+			case ArrayBuffer,
+				 CopyReadBuffer,
+				 CopyWriteBuffer,
+				 PixelPackBuffer,
+				 PixelUnpackBuffer:
+				result = isBound!array_buffer_binding();
+				break;
+
+			case ElementArrayBuffer:
+				result = isBound!element_array_buffer_binding();
+				break;
+
+			case TextureBuffer:
+				result = isBound!texture_binding_2d();
+				break;
+
+			case TransformFeedbackBuffer:
+				break;
+
+			case UniformBuffer:
+				break;
+
+		}
+
+		if (!result) { 
+			writefln("gland: tried checking if non-existent buffer type bound: %d", type);
+		}
+
+		return result;
+
+	} // isAnyBound
+
+	bool bindVertexArray(VertexType)(ref VertexArray!VertexType vao) {
+
+		if (vertex_array_buffer_binding == vao.handle) {
 			return false;
 		}
 			
-		glBindVertexArray(id);
+		glBindVertexArray(vao.handle);
 
 		return true;
 
-	} //bindVertexArray
+	} // bindVertexArray
 
-	bool bindBuffer(GLenum type, GLuint id) {
+	bool bindBuffer(BufferTarget type, GLuint id) {
 
-		if (type == GL_ARRAY_BUFFER) {
+		import std.stdio : writefln;
+
+		if (type == BufferTarget.ArrayBuffer) {
 
 			if (array_buffer_binding == id) {
 				return false;
@@ -216,7 +356,7 @@ private:
 				
 			array_buffer_binding = id;
 
-		} else if (type == GL_ELEMENT_ARRAY_BUFFER) {
+		} else if (type == BufferTarget.ElementArrayBuffer) {
 
 			if (element_array_buffer_binding == id) {
 				return false;
@@ -224,16 +364,27 @@ private:
 
 			element_array_buffer_binding = id;
 
+		} else {
+
+			writefln("gland: tried to bindBuffer with unknown type: %s", type);
+			return false;
+
 		}
 
 		glBindBuffer(type, id);
 
 		return true;
 
-	} //bindBuffer
+	} // bindBuffer
 
-	bool bufferData(GLenum target, GLsizeiptr size, const GLvoid* data, GLenum usage) {
+	bool bufferData(BufferTarget target, GLsizeiptr size, const GLvoid* data, GLenum usage) {
 
-	} //bufferData
+		if (!isAnyBound(target)) {
+			return false;
+		}
+
+		return true;
+
+	} // bufferData
 
 } // Renderer
