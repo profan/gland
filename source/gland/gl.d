@@ -91,6 +91,14 @@ enum BufferTarget {
 
 } // BufferTarget
 
+enum ShaderType {
+
+	VertexShader = GL_VERTEX_SHADER,
+	FragmentShader = GL_FRAGMENT_SHADER,
+	GeometryShader = GL_GEOMETRY_SHADER
+
+} // ShaderType
+
 // corresponds to usage pattern for given data
 enum DrawType {
 
