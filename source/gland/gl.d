@@ -348,26 +348,34 @@ private:
 
 		import std.stdio : writefln;
 
-		if (type == BufferTarget.ArrayBuffer) {
+		switch (type) with (BufferTarget) {
 
-			if (array_buffer_binding == id) {
-				return false;
-			}
+			case ArrayBuffer: {
+
+				if (array_buffer_binding == id) {
+					return false;
+				}
 				
-			array_buffer_binding = id;
+				array_buffer_binding = id;
+				break;
 
-		} else if (type == BufferTarget.ElementArrayBuffer) {
-
-			if (element_array_buffer_binding == id) {
-				return false;
 			}
 
-			element_array_buffer_binding = id;
+			case ElementArrayBuffer: {
 
-		} else {
+				if (element_array_buffer_binding == id) {
+					return false;
+				}
 
-			writefln("gland: tried to bindBuffer with unknown type: %s", type);
-			return false;
+				element_array_buffer_binding = id;
+				break;
+
+			}
+
+			default: {
+				writefln("gland: tried to bindBuffer with unknown type: %s", type);
+				return false;
+			}
 
 		}
 
