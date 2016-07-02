@@ -324,7 +324,7 @@ private:
 
 		}
 
-		if (!result) { 
+		if (!result) {
 			writefln("gland: tried checking if non-existent buffer type bound: %d", type);
 		}
 
