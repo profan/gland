@@ -4,7 +4,36 @@ import glad.gl.enums;
 import glad.gl.types;
 import glad.gl.funcs;
 
-/*
+/**
+ * Misc Types
+*/
+
+alias GLColour = float[4];
+
+/**
+ * Public Helper Functions
+*/
+
+/**
+ * Converts an integer representing a colour, for example 0x428bca into a 4 element
+ * int array for passing to OpenGL.
+*/
+
+nothrow @nogc pure
+GLfloat[4] to(T : GLfloat[4])(int colour, ubyte alpha = 255) {
+
+	GLfloat[4] gl_colour = [ //mask out r, g, b components from int
+		cast(float)cast(ubyte)(colour>>16)/255,
+		cast(float)cast(ubyte)(colour>>8)/255,
+		cast(float)cast(ubyte)(colour)/255,
+		cast(float)cast(ubyte)(alpha)/255
+	];
+
+	return gl_colour;
+
+} //to!GLfloat[4]
+
+/**
  * UDA's for defining stuff in vertex structures.
 */
 
@@ -136,7 +165,7 @@ struct DrawParams {
 
 } // DrawParams
 
-/* 
+/**
  * Possible alternative to DrawParams, would be template on what would be passed 
  *  and then we could only pass what would be necssary for the given call, 
  *  reducing overhead both in memory and run-time checking.
@@ -186,7 +215,9 @@ struct VertexBuffer(VT) {
 
 } // VertexBuffer
 
-/* UFCS functions for drawing, uploading data, etc. */
+/**
+ * UFCS functions for drawing, uploading data, etc.
+*/
 
 nothrow @nogc
 auto allocate(VertexType)(in VertexType[] vertices, DrawType draw_type, DrawPrimitive prim_type = DrawPrimitive.Triangles) {
@@ -214,9 +245,11 @@ void draw(VertexType)(ref VertexArray!VertexType vao, DrawParams params) {
 struct Renderer {
 static:
 
-	/* data bindings */
+	/**
+	 * data bindings
+	*/
 
-	//GL_ARRAY_BUFER_BINDING
+	//GL_ARRAY_BUFFER_BINDING
 	GLuint array_buffer_binding;
 
 	//GL_ELEMENT_ARRAY_BUFFER_BINDING
@@ -231,7 +264,9 @@ static:
 	//GL_TEXTURE_BINDING_2D
 	GLuint texture_binding_2d;
 
-	/* misc state */
+	/**
+	 * misc state
+	*/
 
 	//GL_TEXTURE_2D
 	bool texture_2d;
@@ -269,18 +304,33 @@ static:
 	//GL_BLEND_DST
 	GLenum blend_dst;
 
-	/* 
+	/**
 	 * Framebuffer Control
 	*/
 
 	//GL_DRAW_BUFFER
 	//TODO: ...
 
-	/*
+	/**
 	 * Functions, this is the public API
 	*/
 
-	/*
+	void clearColour(GLint rgb) {
+
+		auto colour = to!GLColour(rgb);
+		glClearColor(colour[0], colour[1], colour[2], colour[3]);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+	} // clearColour
+
+	void clearColour(GLubyte r, GLubyte g, GLubyte b, GLubyte a = 255) {
+
+		glClearColor(r, g, b, a);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+	} // clearColour
+
+	/**
 	 * Internal Helpers, not public API.
 	*/
 
