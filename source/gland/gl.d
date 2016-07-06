@@ -113,7 +113,7 @@ template TypeToGL(T) {
 		static assert (0, format("No type conversion found for: %s to OpenGL equivalent", T.stringof));
 	}
 
-} // typeToGL
+} // TypeToGL
 
 // corresponds to targets to which OpenGL buffer objects are bound
 enum BufferTarget {
@@ -139,7 +139,7 @@ enum ShaderType {
 } // ShaderType
 
 // corresponds to usage pattern for given data
-enum DrawType {
+enum DrawHint {
 
 	StaticDraw = GL_STATIC_DRAW,
 	StaticRead = GL_STATIC_READ,
@@ -150,7 +150,7 @@ enum DrawType {
 	StreamDraw = GL_STREAM_DRAW,
 	StreamRead = GL_STREAM_READ
 
-} // DrawType
+} // DrawHint
 
 // corresponds to OpenGL primitives
 enum DrawPrimitive {
@@ -267,7 +267,7 @@ struct VertexBuffer(VT) {
 */
 
 nothrow @nogc
-auto allocate(VertexType)(in VertexType[] vertices, DrawType draw_type, DrawPrimitive prim_type = DrawPrimitive.Triangles) {
+auto allocate(VertexType)(in VertexType[] vertices, DrawHint draw_hint, DrawPrimitive prim_type = DrawPrimitive.Triangles) {
 
 	VertexArray!VertexType vao;
 	VertexBuffer!VertexType vbo;
@@ -482,7 +482,7 @@ private:
 
 	} // bindBuffer
 
-	bool bufferData(BufferTarget target, GLsizeiptr size, const GLvoid* data, GLenum usage) {
+	bool bufferData(BufferTarget target, GLsizeiptr size, const GLvoid* data, DrawHint usage) {
 
 		if (!isAnyBound(target)) {
 			return false;
