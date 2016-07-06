@@ -70,24 +70,32 @@ const (char*) to(T : char*)(GLenum value) {
 
     }
 
-} //to!string(GLenum)
+} //to!(const (char*))(GLenum)
 
 /**
  * UDA's for defining stuff in vertex structures.
 */
 
-struct VertexAttribDivisor {
+struct VertexAttribDivisor_ {
 
 	GLuint divisor;
 
 } // VertexAttribDivisor
 
+@property vertexAttribDivisor(GLuint divisor) {
+	return VertexAttribDivisor_(divisor);
+} // vertexAttribDivisor
+
 // attribute normalization in structures
-struct Normalized {
+struct Normalized_ {
 
 	bool is_normalized;
 
 } // Normalized
+
+@property normalized(bool normalized) {
+	return Normalized_(normalized);
+} // normalized
 
 template TypeToGL(T) {
 
@@ -171,8 +179,8 @@ enum DrawPrimitive {
 enum BlendEquation {
 
 	Add = GL_FUNC_ADD,
-	Sub = GL_FUNC_SUBTRACT,
-	ReverseSub = GL_FUNC_REVERSE_SUBTRACT,
+	Subtract = GL_FUNC_SUBTRACT,
+	ReverseSubtract = GL_FUNC_REVERSE_SUBTRACT,
 	Min = GL_MIN,
 	Max = GL_MAX
 
