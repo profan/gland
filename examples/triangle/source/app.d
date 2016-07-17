@@ -100,7 +100,6 @@ void main() {
 
 	// ortographic projection
 	Mat4f projection = orthographic(0.0f, window.width, 0.0f, window.height, 0.0f, 1.0f);
-	auto transposed_projection = transpose(projection); // because OpenGL row-major
 
 	// load graphics and stuff
 	auto triangle_shader = TriangleShader.compile(&vs_shader, &fs_shader);
@@ -144,7 +143,7 @@ void main() {
 		// cornflower blue, of course
 		Renderer.clearColour(0x428bca);
 
-		Mat4f[1] sent_data = [transposed_projection];
+		Mat4f[1] sent_data = [projection];
 		float[2] offset1 = [0, 0], offset2 = [window.width/2 - w/2, window.height/2 - h/2];
 		Renderer.draw(triangle_shader, vao, params, sent_data, offset1);
 		Renderer.draw(triangle_shader, vao, params, sent_data, offset2);
