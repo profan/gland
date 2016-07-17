@@ -1,5 +1,8 @@
 module gl;
 
+import core.stdc.stdio : printf;
+import std.typecons : tuple, Tuple;
+
 import glad.gl.enums;
 import glad.gl.types;
 import glad.gl.funcs;
@@ -19,7 +22,7 @@ alias GLColour = float[4];
  * int array for passing to OpenGL.
 */
 
-nothrow @nogc pure
+nothrow pure @nogc
 GLfloat[4] to(T : GLfloat[4])(int colour, ubyte alpha = 255) {
 
 	GLfloat[4] gl_colour = [ //mask out r, g, b components from int
@@ -37,6 +40,8 @@ GLfloat[4] to(T : GLfloat[4])(int colour, ubyte alpha = 255) {
  * Converts a GLenum representation of a value to a c string representation,
  * for use with debug printing of OpenGL info, from debug callbacks for example.
 */
+
+nothrow pure @nogc
 const (char*) to(T : char*)(GLenum value) {
 
     switch (value) {
@@ -229,7 +234,228 @@ struct TDrawParams {
 
 } // TDrawParams
 
-struct Shader(ShaderType[] shaders, Uniforms...) {
+string generateShaderCompile(string uniform) {
+
+	import std.array : appender;
+
+	auto func_data = appender!string();
+
+	return "";
+
+} // generateShaderCompile
+
+nothrow @nogc
+bool checkShaderError(GLuint shader, GLuint flag, bool is_program) {
+
+	GLint result;
+
+	(is_program) ? glGetProgramiv(shader, flag, &result)
+				: glGetShaderiv(shader, flag, &result);
+
+	if (result == GL_FALSE) {
+
+		GLchar[256] log; //FIXME this is potentially fatal
+		(is_program) ? glGetProgramInfoLog(shader, log.sizeof, null, log.ptr)
+			: glGetShaderInfoLog(shader, log.sizeof, null, log.ptr);
+
+		printf("[OpenGL] Error %s\n", log.ptr);
+		return false;
+
+	}
+
+	return true;
+
+} // checkShaderError
+
+nothrow @nogc
+GLuint compileShader(const(GLchar*)* shader_source, ShaderType shader_type) {
+
+	GLuint new_shader = glCreateShader(shader_type);
+	if (new_shader == 0) { return 0; } // FAILED, TODO: return proper error
+
+	glShaderSource(new_shader, 1, shader_source, null);
+	glCompileShader(new_shader);
+
+	bool result = checkShaderError(new_shader, GL_COMPILE_STATUS, false);
+
+	if (!result) {
+		glDeleteShader(new_shader);
+		return 0;
+	}
+
+	return new_shader;
+
+} // compileShader
+
+GLuint createShaderProgram(in GLuint[] shader_ids, in AttribTuple[] attribs) {
+
+	GLuint program = glCreateProgram();
+
+	foreach(i, shader; shader_ids) {
+		glAttachShader(program, shader);
+	}
+
+	foreach (ref attr; attribs) {
+		glBindAttribLocation(program, attr.offset, attr.identifier.ptr);
+	}
+
+	glLinkProgram(program);
+	if (!checkShaderError(program, GL_LINK_STATUS, true)) {
+		glDeleteShader(program);
+		return 0;
+	}
+
+	glValidateProgram(program);
+	if (!checkShaderError(program, GL_VALIDATE_STATUS, true)) {
+		glDeleteShader(program);
+		return 0;
+	}
+
+	return program;
+
+} //createShaderProgram
+
+alias AttribTuple = Tuple!(string, "identifier", int, "offset");
+alias ShaderTuple = Tuple!(ShaderType, "type", AttribTuple[], "attribs");
+struct Shader(ShaderTuple[] shaders, Uniforms...) {
+
+	import std.string : format;
+
+	GLuint program_;
+	mixin(q{GLuint[%d] uniforms_;}.format(Uniforms.length / 2));
+
+	/* example shader data
+	GLuint program_;
+	GLuint[1] uniforms_;
+	*/
+
+	@disable this(this);
+
+	static string createFunction(ShaderTuple[] shaders) {
+
+		import std.algorithm : map, joiner;
+		import std.range : enumerate;
+		import std.array : appender;
+
+		auto buffer = appender!string();
+
+		buffer ~= q{static Shader compile(%s) {
+			%s
+		}}.format(shaders.enumerate.map!(e => q{const (char*)* source_%d}.format(e.index)).joiner(","), createCompiler(shaders));
+
+		return buffer.data();
+
+	} // createFunction
+
+	static string createCompiler(ShaderTuple[] shaders) {
+
+		import std.algorithm : map, joiner;
+		import std.range : enumerate;
+		import std.array : appender;
+
+		auto buffer = appender!string();
+
+		buffer ~= q{
+			Shader new_shader;};
+
+		foreach (i, shader; shaders) {
+		buffer ~= q{
+			GLuint shader_%d = compileShader(source_%d, ShaderType.%s);}.format(i, i, shader.type);
+		}
+
+		buffer ~= q{
+			GLuint[%d] shader_ids = [%s];}.format(shaders.length, map!(e => "shader_%d".format(e.index))(shaders.enumerate).joiner(","));
+
+		buffer ~= q{
+			new_shader.program_ = createShaderProgram(shader_ids, shaders[0].attribs);};
+
+		// check uniforms
+		buffer ~= q{
+
+			foreach (i, uniform; Uniforms) {
+
+				// two for each iteration, type + string
+				static if (i % 2 != 0) {
+					continue;
+				} else {
+					GLint res = glGetUniformLocation(new_shader.program_, Uniforms[i+1].ptr);
+					if (res == -1) {
+						assert(0, "uniform fail");
+					}
+					new_shader.uniforms_[i/2] = res;
+				}
+
+			}
+		};
+
+		// linked into program now, delete for now.
+		foreach (i, shader; shaders) {
+			buffer ~= q{
+			glDetachShader(new_shader.program_, shader_%d);}.format(i);
+		}
+
+		foreach (i, shader; shaders) {
+			buffer ~= q{
+			glDeleteShader(shader_%d);}.format(i);
+		}
+
+		buffer ~= q{
+			return new_shader;
+		};
+
+		return buffer.data();
+
+	} // createCompiler
+
+	/* generator */
+	pragma(msg, createFunction(shaders));
+	mixin(createFunction(shaders));
+
+	/* example compile function
+	static Shader compile(const char* source_1, const char* source_2) {
+
+		Shader shader;
+
+		GLuint shader_1 = compileShader(source_1, ShaderType.VertexShader);
+		GLuint shader_2 = compileShader(source_2, ShaderType.FragmentShader);
+
+		GLuint[2] shaders = [shader_1, shader_2];
+		program_ = createShaderProgram(shaders, shaders[0].attribs[]);
+
+		foreach (i, uniform; Uniforms) {
+			GLint = glGetUniformLocation(program_, uniform.ptr);
+			if (res == -1) {
+				assert(0, "uniform fail");
+			}
+			uniforms_[i] = res;
+		}
+
+		/* linked into program now, delete for now.
+		glDetachShader(program_, shader_1);
+		glDetachShader(program_, shader_2);
+		glDeleteShader(shader_1);
+		glDeleteShader(shader_2);
+
+		return new_shader;
+
+	} // compile
+	*/
+
+	~this() {
+
+		glDeleteProgram(program_);
+
+	} // ~this
+
+	@property
+	bool valid() {
+		return true;
+	} // valid
+
+	@property
+	GLuint handle() {
+		return program_;
+	} // handle
 
 } // Shader
 
@@ -241,13 +467,16 @@ struct VertexArray(VT) {
 
 	private {
 
-		GLuint id;
+		GLuint id_;
+		GLuint vbo_;
+		DrawPrimitive type_;
+		uint num_vertices_;
 
 	}
 
 	@property
-	ref GLuint handle() {
-		return id;
+	GLuint* handle() {
+		return &id_;
 	} // handle
 
 } // VertexArray
@@ -264,31 +493,64 @@ struct VertexBuffer(VT) {
 	}
 
 	@property
-	ref GLuint handle() {
-		return id;
+	GLuint* handle() {
+		return &id;
 	} // handle
 
 } // VertexBuffer
+
+template PODMembers(T) {
+
+	import std.meta : Filter;
+	import std.traits : FieldNameTuple;
+
+	template isFieldPOD(string field) {
+		enum isFieldPOD = __traits(isPOD, typeof(__traits(getMember, T, field)));
+	}
+
+	alias PODMembers = Filter!(isFieldPOD, FieldNameTuple!T);
+
+} // PODMembers
 
 /**
  * UFCS functions for drawing, uploading data, etc.
 */
 
 nothrow @nogc
-auto allocate(VertexType)(in VertexType[] vertices, DrawHint draw_hint, DrawPrimitive prim_type = DrawPrimitive.Triangles) {
+auto upload(VertexType)(in VertexType[] vertices, DrawHint draw_hint, DrawPrimitive prim_type = DrawPrimitive.Triangles) {
 
 	VertexArray!VertexType vao;
-	VertexBuffer!VertexType vbo;
 
-	vao.num_vertices = cast(uint)vertices.length;
-	vao.prim_type = prim_type;
+	vao.type_ = prim_type;
+	vao.num_vertices_ = cast(uint)vertices.length;
 
-	glGenVertexArrays(1, &vao.handle);
-	vao.bindVertexArray();
+	glGenVertexArrays(1, vao.handle);
+	Renderer.bindVertexArray(vao);
 
-	glGenBuffers(1, vao.handle);
+	glGenBuffers(1, &vao.vbo_);
+	Renderer.bindBuffer(BufferTarget.ArrayBuffer, vao.vbo_);
+	glBufferData(GL_ARRAY_BUFFER, vertices.length * vertices[0].sizeof, vertices.ptr, draw_hint);
 
-} // allocate
+	foreach (i, m; PODMembers!VertexType) {
+
+		alias MemberType = typeof(__traits(getMember, VertexType, m));
+		enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
+		alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
+
+		glEnableVertexAttribArray(i);
+		glVertexAttribPointer(i,
+			MemberType.sizeof / ElementType.sizeof,
+			TypeToGL!ElementType,
+			GL_FALSE, // normalization
+			vertices[0].sizeof, // stride to jump
+			cast(const(void)*)MemberOffset
+		);
+
+	}
+
+	return vao;
+
+} // upload
 
 nothrow @nogc
 void draw(VertexType)(ref VertexArray!VertexType vao, DrawParams params) {
@@ -318,6 +580,9 @@ static:
 
 	//GL_TEXTURE_BINDING_2D
 	GLuint texture_binding_2d;
+
+	//GL_CURRENT_PROGRAM
+	GLint current_program_binding;
 
 	/**
 	 * misc state
@@ -369,7 +634,7 @@ static:
 	/**
 	 * Functions, this is the public API
 	*/
-
+	nothrow @nogc
 	void clearColour(GLint rgb) {
 
 		auto colour = to!GLColour(rgb);
@@ -378,25 +643,39 @@ static:
 
 	} // clearColour
 
-	void clearColour(GLubyte r, GLubyte g, GLubyte b, GLubyte a = 255) {
+	nothrow @nogc
+	void clearColour(GLclampf r, GLclampf g, GLclampf b, GLclampf a = 255) {
 
 		glClearColor(r, g, b, a);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 	} // clearColour
 
+	nothrow @nogc
+	void draw(ShaderType, VertexArrayType, Args...)(ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
+
+		Renderer.bindVertexArray(vao);
+		Renderer.useProgram(shader.handle);
+
+		glUniformMatrix4fv(0, 1, GL_TRUE, cast(float*)args[0].ptr);
+		glDrawArrays(vao.type_, 0, vao.num_vertices_);
+
+	} // draw
+
+private:
+
 	/**
 	 * Internal Helpers, not public API.
 	*/
 
-private:
-
+	nothrow @nogc
 	bool isBound(alias name)() {
 
 		return name != 0;
 
 	} // isBound
 
+	nothrow @nogc
 	bool isAnyBound(BufferTarget type) {
 
 		import std.stdio : writefln;
@@ -430,25 +709,27 @@ private:
 		}
 
 		if (!result) {
-			writefln("gland: tried checking if non-existent buffer type bound: %d", type);
+			printf("gland: tried checking if non-existent buffer type bound: %d", type);
 		}
 
 		return result;
 
 	} // isAnyBound
 
+	nothrow @nogc
 	bool bindVertexArray(VertexType)(ref VertexArray!VertexType vao) {
 
-		if (vertex_array_buffer_binding == vao.handle) {
+		if (vertex_array_buffer_binding == *vao.handle) {
 			return false;
 		}
 			
-		glBindVertexArray(vao.handle);
+		glBindVertexArray(*vao.handle);
 
 		return true;
 
 	} // bindVertexArray
 
+	nothrow @nogc
 	bool bindBuffer(BufferTarget type, GLuint id) {
 
 		import std.stdio : writefln;
@@ -478,7 +759,7 @@ private:
 			}
 
 			default: {
-				writefln("gland: tried to bindBuffer with unknown type: %s", type);
+				printf("gland: tried to bindBuffer with unknown type: %.*s", type.stringof.length, type);
 				return false;
 			}
 
@@ -490,6 +771,19 @@ private:
 
 	} // bindBuffer
 
+	nothrow @nogc
+	bool useProgram(GLuint program) {
+
+		if (current_program_binding == program) {
+			return false; // already bound
+		}
+
+		glUseProgram(program);
+		return true;
+
+	} // useProgram
+
+	nothrow @nogc
 	bool bufferData(BufferTarget target, GLsizeiptr size, const GLvoid* data, DrawHint usage) {
 
 		if (!isAnyBound(target)) {
