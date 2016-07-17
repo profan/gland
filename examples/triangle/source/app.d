@@ -4,9 +4,9 @@ import std.meta;
 
 import derelict.sdl2.sdl;
 
+import gland.util;
 import gland.win;
 import gland.gl;
-import util;
 
 immutable char* vs_shader = "
 	#version 330

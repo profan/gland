@@ -234,16 +234,6 @@ struct TDrawParams {
 
 } // TDrawParams
 
-string generateShaderCompile(string uniform) {
-
-	import std.array : appender;
-
-	auto func_data = appender!string();
-
-	return "";
-
-} // generateShaderCompile
-
 nothrow @nogc
 bool checkShaderError(GLuint shader, GLuint flag, bool is_program) {
 
@@ -406,38 +396,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 	} // createCompiler
 
 	/* generator */
-	pragma(msg, createFunction(shaders));
 	mixin(createFunction(shaders));
-
-	/* example compile function
-	static Shader compile(const char* source_1, const char* source_2) {
-
-		Shader shader;
-
-		GLuint shader_1 = compileShader(source_1, ShaderType.VertexShader);
-		GLuint shader_2 = compileShader(source_2, ShaderType.FragmentShader);
-
-		GLuint[2] shaders = [shader_1, shader_2];
-		program_ = createShaderProgram(shaders, shaders[0].attribs[]);
-
-		foreach (i, uniform; Uniforms) {
-			GLint = glGetUniformLocation(program_, uniform.ptr);
-			if (res == -1) {
-				assert(0, "uniform fail");
-			}
-			uniforms_[i] = res;
-		}
-
-		/* linked into program now, delete for now.
-		glDetachShader(program_, shader_1);
-		glDetachShader(program_, shader_2);
-		glDeleteShader(shader_1);
-		glDeleteShader(shader_2);
-
-		return new_shader;
-
-	} // compile
-	*/
 
 	~this() {
 
@@ -445,15 +404,17 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 
 	} // ~this
 
-	@property
-	bool valid() {
-		return true;
-	} // valid
+	@property {
 
-	@property
-	GLuint handle() {
-		return program_;
-	} // handle
+		bool valid() {
+			return true;
+		} // valid
+
+		GLuint handle() {
+			return program_;
+		} // handle
+
+	}
 
 } // Shader
 

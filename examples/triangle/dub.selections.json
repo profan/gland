@@ -2,7 +2,6 @@
 	"fileVersion": 1,
 	"versions": {
 		"derelict-sdl2": "2.0.0",
-		"derelict-util": "2.0.6",
-		"gland": "~master"
+		"derelict-util": "2.0.6"
 	}
 }
