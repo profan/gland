@@ -366,11 +366,9 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 		buffer ~= q{
 			GLuint[%d] shader_ids = [%s];}.format(shaders.length, map!(e => "shader_%d".format(e.index))(shaders.enumerate).joiner(","));
 
-		buffer ~= q{
-			new_shader.program_ = createShaderProgram(shader_ids, shaders[0].attribs);};
-
 		// check uniforms
 		buffer ~= q{
+			new_shader.program_ = createShaderProgram(shader_ids, shaders[0].attribs);
 
 			foreach (i, uniform; Uniforms) {
 

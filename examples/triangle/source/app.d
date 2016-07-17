@@ -110,10 +110,10 @@ void main() {
 		return; // exit now
 	}
 
-	// declare vertex data
-	int w = 64;
-	int h = 64;
+	// size of rects
+	int w = 64, h = 64;
 
+	// declare vertex data
 	Vertex3f[6] vertices = [
 		Vertex3f(Vec3f(0.0f, 0.0f, 0.0f)), // top left
 		Vertex3f(Vec3f(w, 0.0f, 0.0f)), // top right
