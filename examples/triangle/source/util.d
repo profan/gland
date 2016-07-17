@@ -71,7 +71,7 @@ T transpose(T)(ref T matrix) {
 
 } // transpose
 
-Mat4f orthographic(float left, float right, float bottom, float top, float near, float far) pure {
+float[4][4] orthographic(float left, float right, float bottom, float top, float near, float far) pure {
 
     float dx = right - left;
     float dy = top - bottom;

@@ -657,6 +657,93 @@ static:
 		Renderer.bindVertexArray(vao);
 		Renderer.useProgram(shader.handle);
 
+		foreach (i, T; Args) {
+
+			/**
+			 * Vectors
+			*/
+
+			static if (is (T : float)) {
+				glUniform1f(i, args[i]);
+			} else static if (is (T : float[2])) {
+				glUniform2f(i, args[i][0], args[i][1]);
+			} else static if (is (T : float[3])) {
+				glUniform3f(i, args[i][0], args[i][1], args[i][2]);
+			} else static if (is (T : float[4])) {
+				glUniform4f(i, args[i][0], args[i][1], args[i][2], args[i][3]);
+
+			} else static if (is (T : uint)) {
+				glUniform1ui(i, args[i]);
+			} else static if (is (T : uint[2])) {
+				glUniform2ui(i, args[i][0], args[i][1]);
+			} else static if (is (T : uint[3])) {
+				glUniform3ui(i, args[i][0], args[i][1], args[i][2]);
+			} else static if (is (T : uint[4])) {
+				glUniform4ui(i, args[i][0], args[i][1], args[i][2], args[i][3]);
+
+			} else static if (is (T : int)) {
+				glUniform1i(i, args[i]);
+			} else static if (is (T : int[2])) {
+				glUniform2i(i, args[i][0], args[i][1]);
+			} else static if (is (T : int[3])) {
+				glUniform3i(i, args[i][0], args[i][1], args[i][2]);
+			} else static if (is (T : int[4])) {
+				glUniform4i(i, args[i][0], args[i][1], args[i][2], args[i][3]);
+
+			} else static if (is (T : float[1][])) {
+				glUniform1fv(i, args[i].length, cast(float*)args[i].ptr);
+			} else static if (is (T : float[2][])) {
+				glUniform2fv(i, args[i].length, cast(float*)args[i].ptr); 
+			} else static if (is (T : float[3][])) {
+				glUniform3fv(i, args[i].length, cast(float*)args[i].ptr);
+			} else static if (is (T : float[4][])) {
+				glUniform4fv(i, args[i].length, cast(float*)args[i].ptr);
+
+			} else static if (is (T : uint[1][])) {
+				glUniform1uiv(i, args[i].length, args[i].ptr);
+			} else static if (is (T : uint[2][])) {
+				glUniform2uiv(i, args[i].length, args[i].ptr); 
+			} else static if (is (T : uint[3][])) {
+				glUniform3uiv(i, args[i].length, args[i].ptr);
+			} else static if (is (T : uint[4][])) {
+				glUniform4uiv(i, args[i].length, args[i].ptr);
+
+			} else static if (is (T : int[1][])) {
+				glUniform1iv(i, args[i].length, args[i].ptr);
+			} else static if (is (T : int[2][])) {
+				glUniform2iv(i, args[i].length, args[i].ptr); 
+			} else static if (is (T : int[3][])) {
+				glUniform3iv(i, args[i].length, args[i].ptr);
+			} else static if (is (T : int[4][])) {
+				glUniform4iv(i, args[i].length, args[i].ptr);
+
+			/**
+			 * Matrices
+			*/
+
+			} else static if (is (T : float[2][2][])) {
+				glUniformMatrix2fv(i, args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+			} else static if (is (T : float[3][3][])) {
+				glUniformMatrix3fv(i, args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+			} else static if (is (T : float[4][4][])) {
+				glUniformMatrix4fv(i, args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+
+			} else static if (is (T : float[2][3][])) {
+				glUniformMatrix2x3fv(i, args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+			} else static if (is (T : float[3][2][])) {
+				glUniformMatrix3x2fv(i, args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+			} else static if (is (T : float[2][4][])) {
+				glUniformMatrix2x4fv(i, args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+			} else static if (is (T : float[4][2][])) {
+				glUniformMatrix4x2fv(i, args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+			} else static if (is (T : float[3][4][])) {
+				glUniformMatrix3x4fv(i, args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+			} else static if (is (T : float[4][3][])) {
+				glUniformMatrix4x3fv(i, args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+			}
+
+		}
+
 		glUniformMatrix4fv(0, 1, GL_TRUE, cast(float*)args[0].ptr);
 		glDrawArrays(vao.type_, 0, vao.num_vertices_);
 

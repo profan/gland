@@ -12,13 +12,14 @@ immutable char* vs_shader = "
 	#version 330
 
 	uniform mat4 matrix;
+	uniform vec2 offset;
 
 	layout (location = 0) in vec3 position;
 
 	out vec3 vColor;
 
 	void main() {
-		gl_Position = vec4(position, 1.0) * matrix;
+		gl_Position = vec4(position.xy + offset, position.z, 1.0) * matrix;
 		vColor = vec3(1, 0, 0);
 	}
 ";
@@ -41,7 +42,7 @@ alias TriangleShader = Shader!([
 		AttribTuple("position", 0)
 	]),
 	ShaderTuple(ShaderType.FragmentShader, [])
-], Mat4f, "matrix");
+], Mat4f, "matrix", float[2], "offset");
 
 struct Vec3f {
 
@@ -111,8 +112,8 @@ void main() {
 	}
 
 	// declare vertex data
-	int w = window.width;
-	int h = window.height;
+	int w = 64;
+	int h = 64;
 
 	Vertex3f[6] vertices = [
 		Vertex3f(Vec3f(0.0f, 0.0f, 0.0f)), // top left
@@ -142,7 +143,11 @@ void main() {
 
 		// cornflower blue, of course
 		Renderer.clearColour(0x428bca);
-		Renderer.draw(triangle_shader, vao, params, transposed_projection);
+
+		Mat4f[1] sent_data = [transposed_projection];
+		float[2] offset1 = [0, 0], offset2 = [window.width/2 - w/2, window.height/2 - h/2];
+		Renderer.draw(triangle_shader, vao, params, sent_data, offset1);
+		Renderer.draw(triangle_shader, vao, params, sent_data, offset2);
 
 		window.present();
 
