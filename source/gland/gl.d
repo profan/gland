@@ -1,4 +1,4 @@
-module gl;
+module gland.gl;
 
 import core.stdc.stdio : printf;
 import std.typecons : tuple, Tuple;

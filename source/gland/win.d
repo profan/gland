@@ -181,7 +181,7 @@ struct Window {
 					void* userParam)
 		{
 
-			import gl : to;
+			import gland.gl : to;
 
 			printf("Message: %s \nSource: %s \nType: %s \nID: %d \nSeverity: %s\n\n",
 					message, to!(char*)(source), to!(char*)(type), id, to!(char*)(severity));
