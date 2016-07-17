@@ -3,13 +3,14 @@ module gland.util;
 import std.algorithm : max, swap;
 import std.math : sqrt;
 
-import win;
+import gland.win;
 
+pure @nogc nothrow
 float distance2D(float x1, float y1, float x2, float y2) {
 	return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 } // distance2D
 
-T normalize(T)(T val, T min, T max, T val_max) pure @nogc nothrow {
+T normalize(T)(T val, T min, T max, T val_max) {
         return (min + val) / (val_max / (max - min));
 } //normalize
 
