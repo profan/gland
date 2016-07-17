@@ -14,7 +14,7 @@ Goals
 
 Inspirations
 ------------------
-Without a doubt, (https://github.com/tomaka/glium)[glium] from tomaka is a heavy inspiration for undertaking this project. After seeing it done in Rust, I realised my current approach of working with OpenGL was flawed, and given D's strengths in metaprogramming, I instantly wanted to see how viable it was to do in D.
+Without a doubt, [glium](https://github.com/tomaka/glium) from tomaka is a heavy inspiration for undertaking this project. After seeing it done in Rust, I realised my current approach of working with OpenGL was flawed, and given D's strengths in metaprogramming, I instantly wanted to see how viable it was to do in D.
 
 Who is this for?
 -------------------
