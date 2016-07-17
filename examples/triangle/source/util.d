@@ -1,4 +1,4 @@
-import std.algorithm : max;
+import std.algorithm : max, swap;
 import std.math : sqrt;
 
 import gland.win;
@@ -34,3 +34,58 @@ float[3] posToColour(ref Window win, int m_x, int m_y) {
 	return [r, g, b];
 
 } // posToColour
+
+template iota(size_t from, size_t to)
+if (from <= to) {
+    alias iota = siotaImpl!(to-1, from);
+}
+
+private template siotaImpl(size_t to, size_t now) {
+    import std.typetuple : TypeTuple;
+    static if (now >= to) {
+            alias siotaImpl = TypeTuple!(now);
+    } else {
+            alias siotaImpl = TypeTuple!(now, siotaImpl!(to, now+1));
+    }
+}
+
+T transpose(T)(ref T matrix) {
+
+    auto new_matrix = matrix;
+    alias dims = iota!(0, T.length);
+
+    /* foreach over type tuple is implicitly performed at compile time. */
+    foreach (x; dims) {
+        foreach (y; dims) {
+            /* center diagonal, do not swap. */
+            static if (x != y) {
+                new_matrix[x][y] = matrix[y][x];
+                new_matrix[y][x] = matrix[x][y];
+            } else {
+                break;
+            }
+        }
+    }
+
+    return new_matrix;
+
+} // transpose
+
+Mat4f orthographic(float left, float right, float bottom, float top, float near, float far) pure {
+
+    float dx = right - left;
+    float dy = top - bottom;
+    float dz = far - near;
+
+    float tx = -(right + left) / dx;
+    float ty = -(top + bottom) / dy;
+    float tz = -(far + near)   / dz;
+
+    return [
+        [2.0/dx, 0.0, 0.0, tx],
+        [0.0, 2.0/dy, 0.0, ty],
+        [0.0, 0.0, -2.0/dz, tz],
+        [0.0, 0.0, 0.0, 1.0]
+    ];
+
+} // orthographic
