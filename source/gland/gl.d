@@ -744,7 +744,6 @@ static:
 
 		}
 
-		glUniformMatrix4fv(0, 1, GL_TRUE, cast(float*)args[0].ptr);
 		glDrawArrays(vao.type_, 0, vao.num_vertices_);
 
 	} // draw
