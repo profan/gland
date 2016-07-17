@@ -2,6 +2,16 @@ gland
 -----------
 This library is intended primarily to reduce boilerplate that OpenGL imposes on the user by employing code generation from user defined structures, getting as close as one can get to making working with OpenGL declarative.
 
+Should I use this right now?
+-------------------------------
+USE THIS? God no. Wait a bit until it's actually come to some sort of reasonable usability level.
+
+Goals
+-----------
+ * Support OpenGL 3.3+ (for v1.0, simply Core OpenGL 3.3)
+ * Remove all explicit state changes, reduce to draw calls.
+ * Minimize Boilerplate
+
 Inspirations
 ------------------
 Without a doubt, (https://github.com/tomaka/glium)[glium] from tomaka is a heavy inspiration for undertaking this project. After seeing it done in Rust, I realised my current approach of working with OpenGL was flawed, and given D's strengths in metaprogramming, I instantly wanted to see how viable it was to do in D.
