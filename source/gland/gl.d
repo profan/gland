@@ -310,6 +310,7 @@ alias ShaderTuple = Tuple!(ShaderType, "type", AttribTuple[], "attribs");
 struct Shader(ShaderTuple[] shaders, Uniforms...) {
 
 	import std.string : format;
+	alias Bindings = Uniforms;
 
 	GLuint program_;
 	mixin(q{GLuint[%d] uniforms_;}.format(Uniforms.length / 2));
@@ -612,6 +613,21 @@ static:
 
 	nothrow @nogc
 	void draw(ShaderType, VertexArrayType, Args...)(ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
+
+		import std.string : format;
+
+		// type checking args
+		static assert(args.length == ShaderType.Bindings.length/2,
+			"length of args passed doesn't match length of ShaderType bindings!");
+
+		foreach (i, arg; Args) {
+			static if (i % 2 != 0) {
+				continue;
+			} else {
+				static assert(is (arg : ShaderType.Bindings[i]),
+					"input type: %s does not match binding type: %s!".format(typeof(arg).stringof, ShaderType.Bindings[i]));
+			}
+		}
 
 		Renderer.bindVertexArray(vao);
 		Renderer.useProgram(shader.handle);

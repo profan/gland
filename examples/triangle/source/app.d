@@ -42,7 +42,7 @@ alias TriangleShader = Shader!([
 		AttribTuple("position", 0)
 	]),
 	ShaderTuple(ShaderType.FragmentShader, [])
-], Mat4f, "matrix", float[2], "offset");
+], Mat4f[], "matrix", float[2], "offset");
 
 struct Vec3f {
 
