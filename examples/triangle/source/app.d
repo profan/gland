@@ -11,27 +11,25 @@ import gland.gl;
 immutable char* vs_shader = "
 	#version 330
 
-	uniform mat4 matrix;
-	uniform vec2 offset;
-
 	layout (location = 0) in vec3 position;
+	layout (location = 1) in vec3 colour;
 
-	out vec3 vColor;
+	out vec3 v_colour;
 
 	void main() {
-		gl_Position = vec4(position.xy + offset, position.z, 1.0) * matrix;
-		vColor = vec3(1, 0, 0);
+		gl_Position = vec4(position, 1.0);
+		v_colour = colour;
 	}
 ";
 
 immutable char* fs_shader = "
 	#version 330
 
-	in vec3 vColor;
-	out vec4 f_color;
+	in vec3 v_colour;
+	out vec4 f_colour;
 
 	void main() {
-		f_color = vec4(vColor, 1.0);
+		f_colour = vec4(v_colour, 1.0);
 	}
 ";
 
@@ -39,10 +37,11 @@ alias Mat4f = float[4][4];
 
 alias TriangleShader = Shader!([
 	ShaderTuple(ShaderType.VertexShader, [
-		AttribTuple("position", 0)
+		AttribTuple("position", 0),
+		AttribTuple("colour", 1)
 	]),
 	ShaderTuple(ShaderType.FragmentShader, [])
-], Mat4f[], "matrix", float[2], "offset");
+]);
 
 struct Vec3f {
 
@@ -57,22 +56,10 @@ struct Vec3f {
 
 } // Vec3f
 
-struct Vec2f {
-
-	alias T = float[2];
-	T data_;
-
-	this(float f1, float f2) {
-		data_ = [f1, f2];
-	}
-
-	alias data_ this;
-
-} // Vec2f
-
 struct Vertex3f {
 
 	Vec3f.T position;
+	Vec3f.T colour;
 
 } // Vertex3f
 
@@ -98,9 +85,6 @@ void main() {
 
 	}
 
-	// ortographic projection
-	Mat4f projection = orthographic(0.0f, window.width, 0.0f, window.height, 0.0f, 1.0f);
-
 	// load graphics and stuff
 	auto triangle_shader = TriangleShader.compile(&vs_shader, &fs_shader);
 
@@ -110,18 +94,11 @@ void main() {
 		return; // exit now
 	}
 
-	// size of rects
-	int w = 64, h = 64;
-
 	// declare vertex data
-	Vertex3f[6] vertices = [
-		Vertex3f(Vec3f(0.0f, 0.0f, 0.0f)), // top left
-		Vertex3f(Vec3f(w, 0.0f, 0.0f)), // top right
-		Vertex3f(Vec3f(w, h, 0.0f)), // bottom right
-
-		Vertex3f(Vec3f(0.0f, 0.0f, 0.0f)), // top left
-		Vertex3f(Vec3f(0.0f, h, 0.0f)), // bottom left
-		Vertex3f(Vec3f(w, h, 0.0f)) // bottom right
+	Vertex3f[3] vertices = [
+		Vertex3f(Vec3f(0.0f, 0.5f, 0.0f), Vec3f(1, 0, 0)), // triangle top
+		Vertex3f(Vec3f(-0.5f, -0.5f, 0.0f), Vec3f(0, 1, 0)), // triangle left
+		Vertex3f(Vec3f(0.5f, -0.5f, 0.0f), Vec3f(0, 0, 1)) // triangle right
 	];
 
 	// now, upload vertices
@@ -142,11 +119,7 @@ void main() {
 
 		// cornflower blue, of course
 		Renderer.clearColour(0x428bca);
-
-		Mat4f[1] sent_data = [projection];
-		float[2] offset1 = [0, 0], offset2 = [window.width/2 - w/2, window.height/2 - h/2];
-		Renderer.draw(triangle_shader, vao, params, sent_data, offset1);
-		Renderer.draw(triangle_shader, vao, params, sent_data, offset2);
+		Renderer.draw(triangle_shader, vao, params);
 
 		window.present();
 
