@@ -4,6 +4,6 @@
 	"copyright": "Copyright © 2016, profan",
 	"authors": ["profan"],
 	"dependencies": {
-		"gland": "~master"
+		"gland": {"version": "~master", "path": "../../"}
 	}
 }
