@@ -11,13 +11,13 @@ import gland.gl;
 immutable char* vs_shader = "
 	#version 330
 
-	layout (location = 0) in vec3 position;
+	layout (location = 0) in vec2 position;
 	layout (location = 1) in vec3 colour;
 
 	out vec3 v_colour;
 
 	void main() {
-		gl_Position = vec4(position, 1.0);
+		gl_Position = vec4(position, 0.0, 1.0);
 		v_colour = colour;
 	}
 ";
@@ -43,23 +43,10 @@ alias TriangleShader = Shader!([
 	ShaderTuple(ShaderType.FragmentShader, [])
 ]);
 
-struct Vec3f {
-
-	alias T = float[3];
-	T data_;
-
-	this(float f1, float f2, float f3) {
-		data_ = [f1, f2, f3];
-	}
-
-	alias data_ this;
-
-} // Vec3f
-
 struct Vertex3f {
 
-	Vec3f.T position;
-	Vec3f.T colour;
+	float[2] position;
+	float[3] colour;
 
 } // Vertex3f
 
@@ -96,9 +83,9 @@ void main() {
 
 	// declare vertex data
 	Vertex3f[3] vertices = [
-		Vertex3f(Vec3f(0.0f, 0.5f, 0.0f), Vec3f(1, 0, 0)), // triangle top
-		Vertex3f(Vec3f(-0.5f, -0.5f, 0.0f), Vec3f(0, 1, 0)), // triangle left
-		Vertex3f(Vec3f(0.5f, -0.5f, 0.0f), Vec3f(0, 0, 1)) // triangle right
+		Vertex3f([0.0f, 0.5f], [1.0f, 0.0f, 0.0f]), // triangle top
+		Vertex3f([-0.5f, -0.5f], [0.0f, 1.0f, 0.0f]), // triangle left
+		Vertex3f([0.5f, -0.5f], [0.0f, 0.0f, 1.0f]) // triangle right
 	];
 
 	// now, upload vertices
