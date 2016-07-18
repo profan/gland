@@ -677,20 +677,20 @@ static:
 			} else static if (is (T : uint[1][])) {
 				glUniform1uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
 			} else static if (is (T : uint[2][])) {
-				glUniform2uiv(uniforms_[i], args[i].length, cast(uint*)aargs[i].ptr);
+				glUniform2uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
 			} else static if (is (T : uint[3][])) {
-				glUniform3uiv(uniforms_[i], args[i].length, cast(uint*)aargs[i].ptr);
+				glUniform3uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
 			} else static if (is (T : uint[4][])) {
-				glUniform4uiv(uniforms_[i], args[i].length, cast(uint*)aargs[i].ptr);
+				glUniform4uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
 
 			} else static if (is (T : int[1][])) {
-				glUniform1iv(uniforms_[i], args[i].length, cast(int*)aargs[i].ptr);
+				glUniform1iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
 			} else static if (is (T : int[2][])) {
-				glUniform2iv(uniforms_[i], args[i].length, cast(int*)aargs[i].ptr);
+				glUniform2iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
 			} else static if (is (T : int[3][])) {
-				glUniform3iv(uniforms_[i], args[i].length, cast(int*)aargs[i].ptr);
+				glUniform3iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
 			} else static if (is (T : int[4][])) {
-				glUniform4iv(uniforms_[i], args[i].length, cast(int*)aargs[i].ptr);
+				glUniform4iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
 
 			/**
 			 * Matrices
