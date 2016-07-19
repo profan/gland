@@ -419,6 +419,113 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 
 } // Shader
 
+enum InternalTextureFormat {
+
+	/* RGBA */
+
+	RGBA8,
+	RGBA8UI,
+	RGBA8_SNORM,
+
+	RGBA16,
+	RGBA16F,
+	RGBA16I,
+	RGBA16UI,
+	RGBA16_SNORM,
+
+	RGBA32F,
+	RGBA32I,
+	RGBA32UI,
+
+	/* RGB */
+
+	RGB8_SNORM,
+
+	RGB16I,
+	RGB16UI,
+	RGB16_SNORM,
+
+	RGB32F,
+	RGB32I,
+	RGB32UI,
+
+	/* RG */
+
+	RG8,
+	RG8I,
+	RG8UI,
+	RG8_SNORM,
+
+	RG16,
+	RG16F,
+	RG16_SNORM,
+
+	RG32F,
+	RG32I,
+	RG32UI,
+
+	/* R */
+
+	R8,
+	R8I,
+	R8UI,
+
+	R16F,
+	R16I,
+	R16UI,
+	R16_SNORM,
+
+	R32F,
+	R32I,
+	R32UI,
+
+	/* ESO */
+
+	SRGB8,
+	SRGB8_ALPHA8,
+
+	RGB9_E5,
+	RGB10_A2,
+	RGB10_A2UI,
+	R11F_G11F_B10F,
+
+	COMPRESSED_RG_RGTC2,
+	COMPRESSED_SIGNED_RG_RGTC2,
+
+	COMPRESSED_RED_RGTC1,
+	COMPRESSED_SIGNED_RED_RGTC1,
+
+	/* DEPTH */
+
+	DEPTH_COMPONENT32F,
+	DEPTH_COMPONENT24,
+	DEPTH_COMPONENT16,
+	DEPTH32F_STENCIL8,
+	DEPTH24_STENCIL
+
+} // InternalTextureFormat
+
+enum PixelFormat {
+
+	Red,
+	Rg,
+	Rgb,
+	Bgr,
+	Rgba,
+	Bgra
+
+} // PixelFormat
+
+struct Texture {
+
+	private {
+
+		GLuint handle_;
+
+	}
+
+} // Texture
+
 struct Vertex {
 
 } // Vertex
