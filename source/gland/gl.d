@@ -439,6 +439,8 @@ enum InternalTextureFormat {
 
 	/* RGB */
 
+	RGB8 = GL_RGB8,
+	RGB8UI = GL_RGB8UI,
 	RGB8_SNORM = GL_RGB8_SNORM,
 
 	RGB16I = GL_RGB16I,
