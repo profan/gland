@@ -512,7 +512,10 @@ enum PixelFormat {
 	Rgb = GL_RGB,
 	Bgr = GL_BGR,
 	Rgba = GL_RGBA,
-	Bgra = GL_BGRA
+	Bgra = GL_BGRA,
+
+	DepthComponent = GL_DEPTH_COMPONENT,
+	DepthStencil = GL_DEPTH_STENCIL
 
 } // PixelFormat
 
