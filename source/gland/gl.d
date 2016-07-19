@@ -443,6 +443,8 @@ enum InternalTextureFormat {
 	RGB8UI = GL_RGB8UI,
 	RGB8_SNORM = GL_RGB8_SNORM,
 
+	RGB16 = GL_RGB16,
+	RGB16F = GL_RGB16F,
 	RGB16I = GL_RGB16I,
 	RGB16UI = GL_RGB16UI,
 	RGB16_SNORM = GL_RGB16_SNORM,
@@ -460,6 +462,8 @@ enum InternalTextureFormat {
 
 	RG16 = GL_RG16,
 	RG16F = GL_RG16F,
+	RG16I = GL_RG16I,
+	RG16UI = GL_RG16UI,
 	RG16_SNORM = GL_RG16_SNORM,
 
 	RG32F = GL_RG32F,
@@ -520,6 +524,13 @@ enum PixelFormat {
 	DepthStencil = GL_DEPTH_STENCIL
 
 } // PixelFormat
+
+enum TextureFiltering {
+
+	Nearest = GL_NEAREST,
+	Linear = GL_LINEAR
+
+} // TextureFiltering
 
 struct Texture {
 
