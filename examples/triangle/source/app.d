@@ -43,12 +43,12 @@ alias TriangleShader = Shader!([
 	ShaderTuple(ShaderType.FragmentShader, [])
 ]);
 
-struct Vertex3f {
+struct Vertex2f3f {
 
 	float[2] position;
 	float[3] colour;
 
-} // Vertex3f
+} // Vertex2f3f
 
 void main() {
 
@@ -82,10 +82,10 @@ void main() {
 	}
 
 	// declare vertex data
-	Vertex3f[3] vertices = [
-		Vertex3f([0.0f, 0.5f], [1.0f, 0.0f, 0.0f]), // triangle top
-		Vertex3f([-0.5f, -0.5f], [0.0f, 1.0f, 0.0f]), // triangle left
-		Vertex3f([0.5f, -0.5f], [0.0f, 0.0f, 1.0f]) // triangle right
+	Vertex2f3f[3] vertices = [
+		Vertex2f3f([0.0f, 0.5f], [1.0f, 0.0f, 0.0f]), // triangle top
+		Vertex2f3f([-0.5f, -0.5f], [0.0f, 1.0f, 0.0f]), // triangle left
+		Vertex2f3f([0.5f, -0.5f], [0.0f, 0.0f, 1.0f]) // triangle right
 	];
 
 	// now, upload vertices
