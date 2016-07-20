@@ -343,6 +343,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 		import std.algorithm : map, joiner;
 		import std.range : enumerate;
 		import std.array : appender;
+		import std.string : format;
 
 		auto buffer = appender!string();
 
@@ -357,7 +358,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 		buffer ~= q{
 			GLuint[%d] shader_ids = [%s];}.format(shaders.length, map!(e => "shader_%d".format(e.index))(shaders.enumerate).joiner(","));
 
-		// check uniforms
+		// resolve uniform locations
 		buffer ~= q{
 			new_shader.program_ = createShaderProgram(shader_ids, shaders[0].attribs);
 
@@ -369,7 +370,9 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 				} else {
 					GLint res = glGetUniformLocation(new_shader.program_, Uniforms[i+1].ptr);
 					if (res == -1) {
-						assert(0, "uniform fail");
+						immutable string error = format("failed to get uniform location for: %s (maybe it was optimized out?)",
+								Uniforms[i+1].stringof);
+						assert(0, error);
 					}
 					new_shader.uniforms_[i/2] = res;
 				}
@@ -532,13 +535,20 @@ enum TextureFiltering {
 
 } // TextureFiltering
 
+enum TextureType {
+
+	Texture2D = GL_TEXTURE_2D
+
+} // TextureType
+
 struct Texture {
 
 	private {
 
 		GLuint handle_;
+		TextureType texture_type_;
 		InternalTextureFormat internal_format_;
-		PixelFormat type_;
+		PixelFormat pixel_format_;
 
 		uint width_;
 		uint height_;
@@ -550,11 +560,57 @@ struct Texture {
 		uint width() { return width_; }
 		uint height() { return height_; }
 		GLuint handle() { return handle_; }
+		TextureType type() { return texture_type_; }
 
 	}
 
+	enum Error {
+		Success = "Succesfully created Texture!"
+	} // Error
+
 	@disable this(this);
 	@disable ref Texture opAssign(ref Texture);
+
+	static Error create(DataType)(ref Texture texture, DataType[] texture_data, int width, int height, InternalTextureFormat input_format, PixelFormat output_format) {
+
+		texture.width_ = width;
+		texture.height_ = height;
+		
+		texture.texture_type_ = TextureType.Texture2D;
+		texture.internal_format_ = input_format;
+		texture.pixel_format_ = output_format;
+
+		// begin creation
+		glGenTextures(1, &texture.handle_);
+		glBindTexture(texture.texture_type_, texture.handle_);
+
+		// set texture parameters in currently bound texture, controls texture wrapping (or GL_CLAMP?)
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		// linearly interpolate between pixels, MIN if texture is too small for drawing area, MAG if drawing area is smaller than texture
+		glTexParameterf(texture.texture_type_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameterf(texture.texture_type_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		auto data_type = TypeToGL!DataType;
+
+		glTexImage2D(
+			texture.texture_type_,
+			0,
+			texture.internal_format_,
+			texture.width_, texture.height_,
+			0,
+			texture.pixel_format_,
+			data_type,
+			cast(void*)texture_data.ptr
+		);
+
+		// for now, unbind
+		glBindTexture(texture.texture_type_, 0);
+
+		return Error.Success;
+
+	} // create
 
 } // Texture
 
@@ -854,6 +910,18 @@ static:
 				glUniformMatrix3x4fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
 			} else static if (is (T : float[4][3][])) {
 				glUniformMatrix4x3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+
+			/**
+			 * Textures
+			*/
+
+			} else static if (is (T : Texture*)) {
+
+				// currently just a single bind, think about this later
+
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(args[i].type, args[i].handle);
+
 			}
 
 		}
