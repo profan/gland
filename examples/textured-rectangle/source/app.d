@@ -80,25 +80,27 @@ void main() {
 	// load graphics and stuff
 	auto texture_shader = TriangleShader.compile(&vs_shader, &fs_shader);
 
-	Texture texture;
+	ubyte[sections * sections] checkerboard(uint sections)(ubyte max, ubyte min) {
+
+		ubyte[sections * sections] data = 255;
+
+		uint row = 0;
+		foreach (i, ref b; data) {
+			if (i % sections == 0) { row++; }
+			auto row_result = ((i % sections == 0 && i % 2 != 0) || (i-1 % sections == 0 || i % 2 != 0));
+			b = (row % 2 == 0) ? (row_result ? 255 : 0) : (row_result ? 0 : 255);
+		}
+
+		return data;
+
+	} // checkerboard
 
 	// create a simple checkered texture
-	import std.algorithm : each;
-	import std.range : enumerate;
+
+	Texture texture;
 
 	immutable uint sections = 8;
-	ubyte[sections * sections] texture_data = 255;
-
-	uint row = 0;
-	foreach (i, ref b; texture_data) {
-
-		if (i % sections == 0) row++;
-
-		auto row_result = ((i % sections == 0 && i % 2 != 0) || (i-1 % sections == 0 || i % 2 != 0));
-		b = (row % 2 == 0) ? (row_result ? 255 : 0) : (row_result ? 0 : 255);
-
-	}
-
+	auto texture_data = checkerboard!sections(255, 0);
 	auto texture_result = Texture.create(texture, texture_data[], sections, sections, InternalTextureFormat.R8, PixelFormat.Red);
 
 	// check validity
