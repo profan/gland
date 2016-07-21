@@ -186,7 +186,12 @@ struct FontAtlas {
 		import std.algorithm.mutation : move;
 		atlas.shader_ = move(shader);
 
-		Vertex4f[0] verts;
+		Vertex4f[3] verts = [
+			Vertex4f([0.0f, 0.0f, 0.0f, 0.0f]),
+			Vertex4f([0.0f, 500.0f, 0.0f, 500.0f]),
+			Vertex4f([500.0f, 500.0f, 0.0f, 500.0f]),
+		];
+
 		atlas.vertices_ = upload(verts[], DrawHint.DynamicDraw, DrawPrimitive.Triangles);
 
 		return Error.Success;
@@ -199,7 +204,7 @@ struct FontAtlas {
 		Vertex4f[] coords = (cast(Vertex4f*)malloc(Vertex4f.sizeof * (text.length * 6)))[0..text.length*6];
 		scope(exit) { free(cast(void*)coords.ptr); }
 
-		int n = 0; // current index into coords_
+		int n = 0; // current index into coords
 		foreach (ch; text) {
 
 			if (ch < 32 || ch > 127) {
@@ -217,11 +222,11 @@ struct FontAtlas {
 			x += chars_[ci].advance_x * sx;
 			y += chars_[ci].advance_y * sy;
 
-			//adjust for hang
+			// adjust for hang
 			y2 -= (chars_[ci].bitmap_top * sy);
 			y2 -= (chars_[ci].tx_offset_y * sy);
 
-			if (!w || !h) { //continue if no width or height, invisible character
+			if (!w || !h) { // continue if no width or height, invisible character
 				continue;
 			}
 
@@ -236,7 +241,12 @@ struct FontAtlas {
 
 		}
 
-		DrawParams params = {};
+		DrawParams params = {
+			do_blend_test : true,
+			do_face_culling : false,
+			do_depth_test : false
+		};
+
 		vertices_.update!Vertex4f(coords, DrawHint.DynamicDraw);
 		Renderer.draw(shader_, vertices_, params, projection_data, to!GLColour(colour), &texture_);
 

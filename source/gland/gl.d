@@ -220,8 +220,13 @@ enum BlendFunc {
 // DrawParams state, is sent with every "draw" command in order to *never* have any manual state modification.
 struct DrawParams {
 
+	bool do_blend_test;
 	BlendFunc blend_src, blend_dst;
 	BlendEquation blend_eq;
+
+	bool do_face_culling;
+
+	bool do_depth_test;
 
 } // DrawParams
 
@@ -717,6 +722,7 @@ void update(VertexType)(ref VertexArray!VertexType vao, in VertexType[] vertices
 
 	Renderer.bindVertexArray(vao);
 	Renderer.bindBuffer(BufferTarget.ArrayBuffer, vao.vbo_);
+	glBufferData(GL_ARRAY_BUFFER, VertexType.sizeof * vertices.length, vertices.ptr, draw_hint);
 
 	foreach (i, m; PODMembers!VertexType) {
 
@@ -992,6 +998,11 @@ static:
 
 		}
 
+		(params.do_blend_test) ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+		(params.do_face_culling) ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
+		(params.do_depth_test) ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
+
+		// basic
 		glDrawArrays(vao.type_, 0, vao.num_vertices_);
 
 	} // draw
