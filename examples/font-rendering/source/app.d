@@ -10,7 +10,7 @@ import gland.win;
 import gland.gl;
 
 immutable char* vs_shader = "
-	#version 330
+	#version 330 core
 
 	in vec4 coord;
 	out vec2 tex_coord;
@@ -24,7 +24,7 @@ immutable char* vs_shader = "
 ";
 
 immutable char* fs_shader = "
-	#version 330
+	#version 330 core
 
 	in vec2 tex_coord;
 
@@ -69,9 +69,8 @@ struct FontAtlas {
 	} //CharacterInfo
 
 	struct Vertex4f {
-
 		Vec4f coord;
-
+		alias coord this;
 	} // Vertex4f
 
 	enum Error {
@@ -196,17 +195,8 @@ struct FontAtlas {
 
 	void renderText(Mat4f[] projection_data, in char[] text, float x, float y, float sx, float sy, int colour) {
 
-		struct Point {
-
-			float x;
-			float y;
-			float s;
-			float t;
-
-		} // Point
-
 		import core.stdc.stdlib : malloc, free;
-		Point[] coords = (cast(Point*)malloc(Point.sizeof * (text.length * 6)))[0..text.length*6];
+		Vertex4f[] coords = (cast(Vertex4f*)malloc(Vertex4f.sizeof * (text.length * 6)))[0..text.length*6];
 		scope(exit) { free(cast(void*)coords.ptr); }
 
 		int n = 0; // current index into coords_
@@ -235,19 +225,19 @@ struct FontAtlas {
 				continue;
 			}
 
-			coords[n++] = Point(x2, y2, chars_[ci].tx_offset, chars_[ci].bitmap_height / atlas_height_); //top left?
-			coords[n++] = Point(x2, y2 - h, chars_[ci].tx_offset, 0);
+			coords[n++] = [x2, y2, chars_[ci].tx_offset, chars_[ci].bitmap_height / atlas_height_]; //top left?
+			coords[n++] = [x2, y2 - h, chars_[ci].tx_offset, 0];
 
-			coords[n++] = Point(x2 + w, y2, chars_[ci].tx_offset + chars_[ci].bitmap_width / atlas_width_, chars_[ci].bitmap_height / atlas_height_);
-			coords[n++] = Point(x2 + w, y2, chars_[ci].tx_offset + chars_[ci].bitmap_width / atlas_width_, chars_[ci].bitmap_height / atlas_height_);
+			coords[n++] = [x2 + w, y2, chars_[ci].tx_offset + chars_[ci].bitmap_width / atlas_width_, chars_[ci].bitmap_height / atlas_height_];
+			coords[n++] = [x2 + w, y2, chars_[ci].tx_offset + chars_[ci].bitmap_width / atlas_width_, chars_[ci].bitmap_height / atlas_height_];
 
-			coords[n++] = Point(x2, y2 - h, chars_[ci].tx_offset, 0);
-			coords[n++] = Point(x2 + w, y2 - h, chars_[ci].tx_offset + chars_[ci].bitmap_width / atlas_width_, 0);
+			coords[n++] = [x2, y2 - h, chars_[ci].tx_offset, 0];
+			coords[n++] = [x2 + w, y2 - h, chars_[ci].tx_offset + chars_[ci].bitmap_width / atlas_width_, 0];
 
 		}
 
 		DrawParams params = {};
-		vertices_.update!Vertex4f(cast(Vertex4f[])coords, DrawHint.DynamicDraw);
+		vertices_.update!Vertex4f(coords, DrawHint.DynamicDraw);
 		Renderer.draw(shader_, vertices_, params, projection_data, to!GLColour(colour), &texture_);
 
 	} // renderText
