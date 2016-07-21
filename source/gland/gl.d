@@ -535,11 +535,24 @@ enum TextureFiltering {
 
 } // TextureFiltering
 
+enum TextureWrapping {
+
+	ClampToEdge = GL_CLAMP_TO_EDGE
+
+} // TextureWrapping
+
 enum TextureType {
 
 	Texture2D = GL_TEXTURE_2D
 
 } // TextureType
+
+struct TextureParams {
+
+	TextureFiltering filtering;
+	TextureWrapping wrapping;
+
+} // TextureParams
 
 struct Texture {
 

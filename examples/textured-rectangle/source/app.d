@@ -9,7 +9,7 @@ import gland.win;
 import gland.gl;
 
 immutable char* vs_shader = "
-	#version 330
+	#version 330 core
 
 	layout (location = 0) in vec2 position;
 	layout (location = 1) in vec2 uv;
@@ -25,7 +25,7 @@ immutable char* vs_shader = "
 ";
 
 immutable char* fs_shader = "
-	#version 330
+	#version 330 core
 
 	in vec2 tex_coord;
 
