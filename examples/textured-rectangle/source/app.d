@@ -106,7 +106,11 @@ void main() {
 	Texture texture;
 	immutable uint sections = 8;
 	auto texture_data = checkerboard!sections(255, 0);
-	auto texture_result = Texture.create(texture, texture_data[], sections, sections, InternalTextureFormat.R8, PixelFormat.Red);
+	TextureParams texture_params = {
+		internal_format : InternalTextureFormat.R8,
+		pixel_format : PixelFormat.Red
+	};
+	auto texture_result = Texture.create(texture, texture_data[], sections, sections, texture_params);
 
 	// declare vertex data
 	Vertex2f2f[6] vertices = [

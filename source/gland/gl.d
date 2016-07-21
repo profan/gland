@@ -547,10 +547,25 @@ enum TextureType {
 
 } // TextureType
 
+enum PixelPack {
+
+	Four = 4,
+	Eight = 8,
+	Two = 2,
+	One = 1
+
+} // PixelPack
+
 struct TextureParams {
+
+	InternalTextureFormat internal_format;
+	PixelFormat pixel_format;
 
 	TextureFiltering filtering;
 	TextureWrapping wrapping;
+
+	PixelPack pack_alignment;
+	PixelPack unpack_alignment;
 
 } // TextureParams
 
@@ -584,26 +599,30 @@ struct Texture {
 	@disable this(this);
 	@disable ref Texture opAssign(ref Texture);
 
-	static Error create(DataType)(ref Texture texture, DataType[] texture_data, int width, int height, InternalTextureFormat input_format, PixelFormat output_format) {
+	static Error create(DataType)(ref Texture texture, DataType[] texture_data, int width, int height, TextureParams params) {
 
 		texture.width_ = width;
 		texture.height_ = height;
 		
 		texture.texture_type_ = TextureType.Texture2D;
-		texture.internal_format_ = input_format;
-		texture.pixel_format_ = output_format;
+		texture.internal_format_ = params.internal_format;
+		texture.pixel_format_ = params.pixel_format;
 
 		// begin creation
 		glGenTextures(1, &texture.handle_);
 		glBindTexture(texture.texture_type_, texture.handle_);
 
 		// set texture parameters in currently bound texture, controls texture wrapping (or GL_CLAMP?)
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_S, params.wrapping);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_T, params.wrapping);
 
 		// linearly interpolate between pixels, MIN if texture is too small for drawing area, MAG if drawing area is smaller than texture
-		glTexParameterf(texture.texture_type_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameterf(texture.texture_type_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameterf(texture.texture_type_, GL_TEXTURE_MIN_FILTER, params.filtering);
+		glTexParameterf(texture.texture_type_, GL_TEXTURE_MAG_FILTER, params.filtering);
+
+		// pixel pack and unpack alignment
+		glPixelStorei(GL_PACK_ALIGNMENT, params.pack_alignment);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, params.unpack_alignment);
 
 		auto data_type = TypeToGL!DataType;
 
@@ -683,6 +702,40 @@ template PODMembers(T) {
 /**
  * UFCS functions for drawing, uploading data, etc.
 */
+
+nothrow @nogc
+void update(ref Texture texture, int x_offset, int y_offset, int width, int height, in void* bytes) {
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture.handle);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x_offset, y_offset, width, height, texture.pixel_format_, GL_UNSIGNED_BYTE, bytes);
+
+} // update
+
+nothrow @nogc
+void update(VertexType)(ref VertexArray!VertexType vao, in VertexType[] vertices, DrawHint draw_hint) {
+
+	Renderer.bindVertexArray(vao);
+	Renderer.bindBuffer(BufferTarget.ArrayBuffer, vao.vbo_);
+
+	foreach (i, m; PODMembers!VertexType) {
+
+		alias MemberType = typeof(__traits(getMember, VertexType, m));
+		enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
+		alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
+
+		glEnableVertexAttribArray(i);
+		glVertexAttribPointer(i,
+			MemberType.sizeof / ElementType.sizeof,
+			TypeToGL!ElementType,
+			GL_FALSE, // normalization
+			vertices[0].sizeof, // stride to jump
+			cast(const(void)*)MemberOffset
+		);
+
+	}
+
+} // update
 
 nothrow @nogc
 auto upload(VertexType)(in VertexType[] vertices, DrawHint draw_hint, DrawPrimitive prim_type = DrawPrimitive.Triangles) {
@@ -831,9 +884,9 @@ static:
 		foreach (i, arg; Args) {
 			static if (i % 2 != 0) {
 				continue;
-			} else {
-				static assert(is (arg : ShaderType.Bindings[i]),
-					"input type: %s does not match binding type: %s!".format(typeof(arg).stringof, ShaderType.Bindings[i]));
+			} else { // TODO: look at this.. :I
+				//static assert(is (arg : ShaderType.Bindings[i]),
+				//	"input type: %s does not match binding type: %s!".format(arg.stringof, ShaderType.Bindings[i].stringof));
 			}
 		}
 
@@ -909,7 +962,7 @@ static:
 			} else static if (is (T : float[3][3][])) {
 				glUniformMatrix3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
 			} else static if (is (T : float[4][4][])) {
-				glUniformMatrix4fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+				glUniformMatrix4fv(cast(int)uniforms_[i], cast(int)args[i].length, GL_FALSE, cast(float*)args[i].ptr);
 
 			} else static if (is (T : float[2][3][])) {
 				glUniformMatrix2x3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
