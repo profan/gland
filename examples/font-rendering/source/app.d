@@ -12,13 +12,13 @@ import gland.gl;
 immutable char* vs_shader = "
 	#version 330 core
 
-	in vec4 coord;
+	layout (location = 0) in vec4 coord;
 	out vec2 tex_coord;
 
 	uniform mat4 projection;
 
 	void main() {
-		gl_Position = projection * vec4(coord.xy, 0, 1.0);
+		gl_Position = projection * vec4(coord.xy, 0.0, 1.0);
 		tex_coord = coord.zw;
 	}
 ";
@@ -143,7 +143,10 @@ struct FontAtlas {
 		TextureParams params = {
 			internal_format : InternalTextureFormat.R8,
 			pixel_format : PixelFormat.Red,
-			unpack_alignment : PixelPack.One
+			pack_alignment : PixelPack.One,
+			unpack_alignment : PixelPack.One,
+			filtering : TextureFiltering.Linear,
+			wrapping : TextureWrapping.ClampToEdge
 		};
 		auto texture_result = Texture.create(atlas.texture_, data[], w, h, params);
 
@@ -188,8 +191,8 @@ struct FontAtlas {
 
 		Vertex4f[3] verts = [
 			Vertex4f([0.0f, 0.0f, 0.0f, 0.0f]),
-			Vertex4f([0.0f, 500.0f, 0.0f, 500.0f]),
-			Vertex4f([500.0f, 500.0f, 0.0f, 500.0f]),
+			Vertex4f([0.0f, 32.0f, 0.0f, 32.0f]),
+			Vertex4f([32.0f, 32.0f, 32.0f, 32.0f]),
 		];
 
 		atlas.vertices_ = upload(verts[], DrawHint.DynamicDraw, DrawPrimitive.Triangles);
@@ -279,6 +282,7 @@ void main() {
 
 	// ortographic projection
 	Mat4f projection = orthographic(0.0f, window.width, 0.0f, window.height, 0.0f, 1.0f);
+	auto transposed_projection = transpose(projection);
 
 	// load graphics and stuff
 	auto text_shader = TextShader.compile(&vs_shader, &fs_shader);
@@ -308,7 +312,7 @@ void main() {
 		// cornflower blue, of course
 		Renderer.clearColour(0x428bca);
 
-		Mat4f[1] projection_data = [projection];
+		Mat4f[1] projection_data = [transposed_projection];
 		text_atlas.renderText(projection_data[], "Hello, World!", window.width / 2, window.height / 2, 1.0f, 1.0f, 0xFFF);
 
 		window.present();

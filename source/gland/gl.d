@@ -318,7 +318,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 	alias Bindings = Uniforms;
 
 	GLuint program_;
-	mixin(q{GLuint[%d] uniforms_;}.format(Uniforms.length / 2));
+	mixin(q{GLint[%d] uniforms_;}.format(Uniforms.length / 2));
 
 	/* example shader data
 	GLuint program_;
@@ -723,6 +723,7 @@ void update(VertexType)(ref VertexArray!VertexType vao, in VertexType[] vertices
 	Renderer.bindVertexArray(vao);
 	Renderer.bindBuffer(BufferTarget.ArrayBuffer, vao.vbo_);
 	glBufferData(GL_ARRAY_BUFFER, VertexType.sizeof * vertices.length, vertices.ptr, draw_hint);
+	vao.num_vertices_ = cast(uint)vertices.length;
 
 	foreach (i, m; PODMembers!VertexType) {
 
@@ -968,7 +969,7 @@ static:
 			} else static if (is (T : float[3][3][])) {
 				glUniformMatrix3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
 			} else static if (is (T : float[4][4][])) {
-				glUniformMatrix4fv(cast(int)uniforms_[i], cast(int)args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+				glUniformMatrix4fv(uniforms_[i], cast(int)args[i].length, GL_FALSE, cast(float*)args[i].ptr);
 
 			} else static if (is (T : float[2][3][])) {
 				glUniformMatrix2x3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
