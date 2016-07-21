@@ -589,8 +589,8 @@ struct Texture {
 		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		// linearly interpolate between pixels, MIN if texture is too small for drawing area, MAG if drawing area is smaller than texture
-		glTexParameterf(texture.texture_type_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameterf(texture.texture_type_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(texture.texture_type_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameterf(texture.texture_type_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 		auto data_type = TypeToGL!DataType;
 
