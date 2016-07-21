@@ -80,6 +80,12 @@ void main() {
 	// load graphics and stuff
 	auto texture_shader = TriangleShader.compile(&vs_shader, &fs_shader);
 
+	// check validity
+	if (!texture_shader.valid) {
+		writefln("[MAIN] Shader compile failed, exiting!");
+		return; // exit now
+	}
+
 	ubyte[sections * sections] checkerboard(uint sections)(ubyte on, ubyte off) {
 
 		ubyte[sections * sections] data = 255;
@@ -102,12 +108,6 @@ void main() {
 	immutable uint sections = 8;
 	auto texture_data = checkerboard!sections(255, 0);
 	auto texture_result = Texture.create(texture, texture_data[], sections, sections, InternalTextureFormat.R8, PixelFormat.Red);
-
-	// check validity
-	if (!texture_shader.valid) {
-		writefln("[MAIN] Shader compile failed, exiting!");
-		return; // exit now
-	}
 
 	// declare vertex data
 	Vertex2f2f[6] vertices = [
