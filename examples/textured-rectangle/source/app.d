@@ -80,7 +80,7 @@ void main() {
 	// load graphics and stuff
 	auto texture_shader = TriangleShader.compile(&vs_shader, &fs_shader);
 
-	ubyte[sections * sections] checkerboard(uint sections)(ubyte max, ubyte min) {
+	ubyte[sections * sections] checkerboard(uint sections)(ubyte on, ubyte off) {
 
 		ubyte[sections * sections] data = 255;
 
@@ -88,7 +88,7 @@ void main() {
 		foreach (i, ref b; data) {
 			if (i % sections == 0) { row++; }
 			auto row_result = ((i % sections == 0 && i % 2 != 0) || (i-1 % sections == 0 || i % 2 != 0));
-			b = (row % 2 == 0) ? (row_result ? 255 : 0) : (row_result ? 0 : 255);
+			b = (row % 2 == 0) ? (row_result ? on : off) : (row_result ? off : on);
 		}
 
 		return data;
