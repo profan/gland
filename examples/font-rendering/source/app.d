@@ -138,17 +138,15 @@ struct FontAtlas {
 
 		}
 
-		byte[0] data;
-
 		TextureParams params = {
 			internal_format : InternalTextureFormat.R8,
 			pixel_format : PixelFormat.Red,
-			pack_alignment : PixelPack.One,
 			unpack_alignment : PixelPack.One,
 			filtering : TextureFiltering.Linear,
 			wrapping : TextureWrapping.ClampToEdge
 		};
-		auto texture_result = Texture.create(atlas.texture_, data[], w, h, params);
+
+		auto texture_result = Texture.create(atlas.texture_, null, w, h, params);
 
 		int x = 0; // current x position in the resulting texture to write to
 		for (uint i = 32; i < 128; ++i) {
