@@ -40,7 +40,7 @@ immutable char* fs_shader = "
 
 alias Mat4f = float[4][4];
 
-alias TriangleShader = Shader!([
+alias TextureShader = Shader!([
 	ShaderTuple(ShaderType.VertexShader, [
 		AttribTuple("position", 0),
 		AttribTuple("uv", 1)
@@ -78,7 +78,7 @@ void main() {
 	}
 
 	// load graphics and stuff
-	auto texture_shader = TriangleShader.compile(&vs_shader, &fs_shader);
+	auto texture_shader = TextureShader.compile(&vs_shader, &fs_shader);
 
 	// check validity
 	if (!texture_shader.valid) {
@@ -104,7 +104,6 @@ void main() {
 	// create a simple checkered texture
 
 	Texture texture;
-
 	immutable uint sections = 8;
 	auto texture_data = checkerboard!sections(255, 0);
 	auto texture_result = Texture.create(texture, texture_data[], sections, sections, InternalTextureFormat.R8, PixelFormat.Red);
@@ -141,7 +140,6 @@ void main() {
 		// cornflower blue, of course
 		Renderer.clearColour(0x428bca);
 
-		byte[] image_data;
 		float[2] offset = [-0.5, -0.5];
 		Renderer.draw(texture_shader, vao, params, offset, &texture);
 
