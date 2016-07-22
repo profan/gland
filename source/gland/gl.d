@@ -797,12 +797,6 @@ mixin template RendererStateVars() {
 	//GL_SCISSOR_BOX
 	GLint[4] scissor_box;
 
-	//GL_ALPHA_TEST
-	bool alpha_test;
-
-	//GL_ALPHA_TEST_FUNC
-	GLenum alpha_test_func;
-
 	//GL_STENCIL_TEST
 	bool stencil_test;
 
@@ -1041,6 +1035,7 @@ static:
 		setState(GL_BLEND, params.state.blend_test);
 		setState(GL_CULL_FACE, params.state.cull_face);
 		setState(GL_DEPTH_TEST, params.state.depth_test);
+		setState(GL_STENCIL_TEST, params.state.stencil_test);
 
 		// basic
 		glDrawArrays(vao.type_, 0, vao.num_vertices_);
@@ -1064,7 +1059,7 @@ private:
 
 		state_switch : switch (state_var) {
 
-			alias StateSeq = AliasSeq!(GL_BLEND, blend_test, GL_CULL_FACE, cull_face, GL_DEPTH_TEST, depth_test);
+			alias StateSeq = AliasSeq!(GL_BLEND, blend_test, GL_CULL_FACE, cull_face, GL_DEPTH_TEST, depth_test, GL_STENCIL_TEST, stencil_test);
 
 			/**
 			 * Below foreach expands to a bunch of case statements checking each state variable like such:
