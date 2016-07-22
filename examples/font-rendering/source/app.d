@@ -321,9 +321,6 @@ void main() {
 			window.quit();
 		}
 
-		// default state, holds all OpenGL state params like blend state etc to be use for given draw call
-		DrawParams params = {};
-
 		// cornflower blue, of course
 		Renderer.clearColour(0x428bca);
 
