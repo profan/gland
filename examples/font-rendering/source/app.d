@@ -94,7 +94,23 @@ struct FontAtlas {
 	}
 
 	static void load() {
+	
+		import derelict.util.exception;
+		
+		ShouldThrow ignoreMissing(string symbolName) {
+		
+			if (symbolName == "FT_Stream_OpenBzip2" ||
+				symbolName == "FT_Get_CID_Registry_Ordering_Supplement" ||
+				symbolName == "FT_Get_CID_Is_Internally_CID_Keyed" ||
+				symbolName == "FT_Get_CID_From_Glyph_Index") {
+				return ShouldThrow.No;
+			}
+			
+			return ShouldThrow.Yes;
+		
+		}
 
+		DerelictFT.missingSymbolCallback = &ignoreMissing;
 		DerelictFT.load();
 
 	} // load
@@ -237,6 +253,8 @@ struct FontAtlas {
 		}
 
 		DrawParams params = {
+			blend_src : BlendFunc.SrcAlpha,
+			blend_dst : BlendFunc.OneMinusSrcAlpha,
 			state: {
 				blend_test : true,
 				cull_face : false,
@@ -244,7 +262,10 @@ struct FontAtlas {
 			}
 		};
 
+		// passes new vertex data to the vertex buffer
 		vertices_.update!Vertex4f(coords, DrawHint.DynamicDraw);
+		
+		// do the drawings
 		Renderer.draw(shader_, vertices_, params, projection_data, to!GLColour(colour), &texture_);
 
 	} // renderText
@@ -275,14 +296,14 @@ void main() {
 	}
 
 	// ortographic projection
-	Mat4f projection = orthographic(0.0f, window.width, 0.0f, window.height, 0.0f, 1.0f);
+	Mat4f projection = orthographic(0.0f, window.width, window.height, 0.0f, 0.0f, 1.0f);
 	auto transposed_projection = transpose(projection);
 
 	// load graphics and stuff
 	auto text_shader = TextShader.compile(&vs_shader, &fs_shader);
 
 	FontAtlas text_atlas;
-	auto atlas_result = FontAtlas.create(text_atlas, "fonts/OpenSans-Bold.ttf", 12, text_shader);
+	auto atlas_result = FontAtlas.create(text_atlas, "fonts/OpenSans-Bold.ttf", 48, text_shader);
 
 	// check validity
 	if (!text_shader.valid) {
@@ -307,7 +328,7 @@ void main() {
 		Renderer.clearColour(0x428bca);
 
 		Mat4f[1] projection_data = [transposed_projection];
-		text_atlas.renderText(projection_data[], "Hello, World!", window.width / 2, window.height / 2, 1.0f, 1.0f, 0x000);
+		text_atlas.renderText(projection_data[], "Hello, World!", window.width / 4, window.height / 2, 1.0f, 1.0f, 0xffa500);
 
 		window.present();
 

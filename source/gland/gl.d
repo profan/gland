@@ -619,7 +619,7 @@ struct Texture {
 
 		// begin creation
 		glGenTextures(1, &texture.handle_);
-		glBindTexture(texture.texture_type_, texture.handle_);
+		Renderer.bindTexture(texture, 0);
 
 		// set texture parameters in currently bound texture, controls texture wrapping (or GL_CLAMP?)
 		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_S, params.wrapping);
@@ -645,9 +645,6 @@ struct Texture {
 			data_type,
 			cast(void*)texture_data.ptr
 		);
-
-		// for now, unbind
-		glBindTexture(texture.texture_type_, 0);
 
 		return Error.Success;
 
@@ -715,8 +712,7 @@ template PODMembers(T) {
 nothrow @nogc
 void update(ref Texture texture, int x_offset, int y_offset, int width, int height, in void* bytes) {
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture.handle);
+	Renderer.bindTexture(texture, 0);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, x_offset, y_offset, width, height, texture.pixel_format_, GL_UNSIGNED_BYTE, bytes);
 
 } // update
@@ -859,9 +855,13 @@ static:
 
 	//GL_UNIFORM_BUFFER
 	GLuint uniform_buffer_binding;
+	
+	//GL_TEXTURE_BUFFER
+	GLuint texture_buffer_binding;
 
+	// TODO: look at this later, at least 16 is the bottom, but it *can* be more
 	//GL_TEXTURE_BINDING_2D
-	GLuint texture_binding_2d;
+	GLuint[16] texture_binding_2d;
 
 	//GL_CURRENT_PROGRAM
 	GLint current_program_binding;
@@ -1011,17 +1011,14 @@ static:
 			} else static if (is (T : Texture*)) {
 
 				// currently just a single bind, think about this later
-
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(args[i].type, args[i].handle);
+				Renderer.bindTexture(*args[i], 0);
 
 			} else static if (is (T : Texture*[])) {
 
 				assert(args[i].length <= 16, "tried passing more than 16 textures?");
 
 				foreach (t_i, texture; args[i]) {
-					glActiveTexture(GL_TEXTURE0 + t_i);
-					glBindTexture(texture.type, texture.handle);
+					Renderer.bindTexture(*args[i], t_i);
 				}
 
 			}
@@ -1037,6 +1034,9 @@ static:
 		setState(GL_DEPTH_TEST, params.state.depth_test);
 		setState(GL_STENCIL_TEST, params.state.stencil_test);
 		setState(GL_SCISSOR_TEST, params.state.scissor_test);
+		
+		// blendaroni, TODO check if already set
+		glBlendFunc(params.blend_src, params.blend_dst);
 
 		// basic
 		glDrawArrays(vao.type_, 0, vao.num_vertices_);
@@ -1126,7 +1126,7 @@ private:
 				break;
 
 			case TextureBuffer:
-				result = isBound!texture_binding_2d();
+				result = isBound!texture_buffer_binding();
 				break;
 
 			case TransformFeedbackBuffer:
@@ -1144,6 +1144,17 @@ private:
 		return result;
 
 	} // isAnyBound
+	
+	nothrow @nogc
+	void bindTexture(ref Texture texture, uint unit) {
+	
+		if (texture_binding_2d[unit] != texture.handle) {
+			glActiveTexture(GL_TEXTURE0 + unit);
+			glBindTexture(GL_TEXTURE_2D, texture.handle);
+			texture_binding_2d[unit] = texture.handle;
+		}
+	
+	} // bindTexture
 
 	nothrow @nogc
 	bool bindVertexArray(VertexType)(ref VertexArray!VertexType vao) {
@@ -1151,7 +1162,8 @@ private:
 		if (vertex_array_buffer_binding == *vao.handle) {
 			return false;
 		}
-			
+
+		vertex_array_buffer_binding = *vao.handle;
 		glBindVertexArray(*vao.handle);
 
 		return true;
@@ -1207,6 +1219,7 @@ private:
 			return false; // already bound
 		}
 
+		current_program_binding = program;
 		glUseProgram(program);
 		return true;
 

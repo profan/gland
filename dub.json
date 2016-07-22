@@ -12,6 +12,8 @@
 		}
 	},
 	"subPackages": [
-		"./examples/triangle"
+		"./examples/triangle",
+		"./examples/textured-rectangle",
+		"./examples/font-rendering"
 	]
 }
