@@ -185,7 +185,7 @@ struct FontAtlas {
 		*/
 
 		import std.algorithm.mutation : move;
-		atlas.shader_ = move(shader);
+		move(shader, atlas.shader_);
 
 		Vertex4f[3] verts = [
 			Vertex4f([0.0f, 0.0f, 0.0f, 0.0f]),

@@ -320,12 +320,8 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 	GLuint program_;
 	mixin(q{GLint[%d] uniforms_;}.format(Uniforms.length / 2));
 
-	/* example shader data
-	GLuint program_;
-	GLuint[1] uniforms_;
-	*/
-
 	@disable this(this);
+	@disable ref Shader opAssign(Shader);
 
 	static string createFunction(ShaderTuple[] shaders) {
 
