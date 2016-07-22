@@ -541,7 +541,9 @@ enum TextureFiltering {
 
 enum TextureWrapping {
 
-	ClampToEdge = GL_CLAMP_TO_EDGE
+	ClampToEdge = GL_CLAMP_TO_EDGE,
+	MirroredRepeat = GL_MIRRORED_REPEAT,
+	Repeat = GL_REPEAT
 
 } // TextureWrapping
 
@@ -558,10 +560,10 @@ enum TextureType {
 
 enum PixelPack {
 
-	Four = 4,
-	Eight = 8,
+	One = 1,
 	Two = 2,
-	One = 1
+	Four = 4,
+	Eight = 8
 
 } // PixelPack
 
@@ -570,11 +572,13 @@ struct TextureParams {
 	InternalTextureFormat internal_format;
 	PixelFormat pixel_format;
 
-	TextureFiltering filtering;
-	TextureWrapping wrapping;
+	/* optional parameters, defaults specified */
+	TextureFiltering filtering = TextureFiltering.Nearest;
+	TextureWrapping wrapping = TextureWrapping.ClampToEdge;
 
-	PixelPack pack_alignment;
-	PixelPack unpack_alignment;
+	/* word alignment by default */
+	PixelPack pack_alignment = PixelPack.Four;
+	PixelPack unpack_alignment = PixelPack.Four;
 
 } // TextureParams
 
@@ -1048,7 +1052,7 @@ private:
 			alias StateSeq = AliasSeq!(GL_BLEND, blend_test, GL_CULL_FACE, cull_face, GL_DEPTH_TEST, depth_test);
 
 			/**
-			 * Expands to a bunch of case statements checking each state variable like such:
+			 * Below foreach expands to a bunch of case statements checking each state variable like such:
 			 *  case GL_BLEND: {
 			 *	  if (blend_test != desired_state) {
 			 *      desired_state ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
