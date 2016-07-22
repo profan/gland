@@ -220,12 +220,15 @@ enum BlendFunc {
 // DrawParams state, is sent with every "draw" command in order to *never* have any manual state modification.
 struct DrawParams {
 
+	// GL_BLEND_TEST
 	bool do_blend_test;
 	BlendFunc blend_src, blend_dst;
 	BlendEquation blend_eq;
 
+	// GL_CULL_FACE
 	bool do_face_culling;
 
+	// GL_DEPTH_TEST
 	bool do_depth_test;
 
 } // DrawParams
@@ -1039,12 +1042,20 @@ private:
 	void setState(GLenum state_var, bool desired_state) {
 
 		import std.meta : AliasSeq;
-		import std.string : format;
 
 		state_switch : switch (state_var) {
 
 			alias StateSeq = AliasSeq!(GL_BLEND, blend_test, GL_CULL_FACE, cull_face, GL_DEPTH_TEST, depth_test);
 
+			/**
+			 * Expands to a bunch of case statements checking each state variable like such:
+			 *  case GL_BLEND: {
+			 *	  if (blend_test != desired_state) {
+			 *      desired_state ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+			 *      blend_test = desired_state;
+			 *	  }
+			 *    break;
+			*/
 			foreach (i, S; StateSeq) {
 				static if (i % 2 == 0) {
 					case S: {
