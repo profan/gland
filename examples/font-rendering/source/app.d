@@ -237,9 +237,11 @@ struct FontAtlas {
 		}
 
 		DrawParams params = {
-			do_blend_test : true,
-			do_face_culling : false,
-			do_depth_test : false
+			state: {
+				blend_test : true,
+				cull_face : false,
+				depth_test : false
+			}
 		};
 
 		vertices_.update!Vertex4f(coords, DrawHint.DynamicDraw);

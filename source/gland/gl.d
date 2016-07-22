@@ -220,16 +220,12 @@ enum BlendFunc {
 // DrawParams state, is sent with every "draw" command in order to *never* have any manual state modification.
 struct DrawParams {
 
+	// corresponds to GL_BLEND_TEST, GL_CULL_FACE, etc..
+	RendererState state;
+
 	// GL_BLEND_TEST
-	bool do_blend_test;
 	BlendFunc blend_src, blend_dst;
 	BlendEquation blend_eq;
-
-	// GL_CULL_FACE
-	bool do_face_culling;
-
-	// GL_DEPTH_TEST
-	bool do_depth_test;
 
 } // DrawParams
 
@@ -793,39 +789,7 @@ void draw(VertexType)(ref VertexArray!VertexType vao, DrawParams params) {
 
 } // draw
 
-/* Functions for creating structures and such. */
-
-struct Renderer {
-static:
-
-	/**
-	 * data bindings
-	*/
-
-	//GL_ARRAY_BUFFER_BINDING
-	GLuint array_buffer_binding;
-
-	//GL_ELEMENT_ARRAY_BUFFER_BINDING
-	GLuint element_array_buffer_binding;
-
-	//GL_VERTEX_ARRAY_BUFFER_BINDING
-	GLuint vertex_array_buffer_binding;
-
-	//GL_UNIFORM_BUFFER
-	GLuint uniform_buffer_binding;
-
-	//GL_TEXTURE_BINDING_2D
-	GLuint texture_binding_2d;
-
-	//GL_CURRENT_PROGRAM
-	GLint current_program_binding;
-
-	/**
-	 * misc state
-	*/
-
-	//GL_TEXTURE_2D
-	bool texture_2d;
+mixin template RendererStateVars() {
 
 	//GL_SCISSOR_TEST
 	bool scissor_test;
@@ -862,6 +826,57 @@ static:
 
 	//GL_CULL_FACE
 	bool cull_face;
+
+	//GL_DITHER
+	bool dither;
+
+	//GL_LINE_SMOOTH
+	bool line_smooth;
+
+	//GL_MULTISAMPLE
+	// ... TODO
+
+}
+
+/* OpenGL state which can be set with glEnable/glDisable */
+struct RendererState {
+
+	mixin RendererStateVars;
+
+} // RendererState
+
+/* Functions for creating structures and such. */
+
+struct Renderer {
+static:
+
+	/**
+	 * data bindings
+	*/
+
+	//GL_ARRAY_BUFFER_BINDING
+	GLuint array_buffer_binding;
+
+	//GL_ELEMENT_ARRAY_BUFFER_BINDING
+	GLuint element_array_buffer_binding;
+
+	//GL_VERTEX_ARRAY_BUFFER_BINDING
+	GLuint vertex_array_buffer_binding;
+
+	//GL_UNIFORM_BUFFER
+	GLuint uniform_buffer_binding;
+
+	//GL_TEXTURE_BINDING_2D
+	GLuint texture_binding_2d;
+
+	//GL_CURRENT_PROGRAM
+	GLint current_program_binding;
+
+	/**
+	 * misc state
+	*/
+
+	mixin RendererStateVars;
 
 	/**
 	 * Framebuffer Control
@@ -1023,9 +1038,9 @@ static:
 		 * TODO: make this less ugly
 		*/
 
-		setState(GL_BLEND, params.do_blend_test);
-		setState(GL_CULL_FACE, params.do_face_culling);
-		setState(GL_DEPTH_TEST, params.do_depth_test);
+		setState(GL_BLEND, params.state.blend_test);
+		setState(GL_CULL_FACE, params.state.cull_face);
+		setState(GL_DEPTH_TEST, params.state.depth_test);
 
 		// basic
 		glDrawArrays(vao.type_, 0, vao.num_vertices_);
@@ -1060,6 +1075,7 @@ private:
 			 *	  }
 			 *    break;
 			*/
+
 			foreach (i, S; StateSeq) {
 				static if (i % 2 == 0) {
 					case S: {
