@@ -13,9 +13,9 @@ immutable char* vs_shader = "
 	#version 330 core
 
 	layout (location = 0) in vec4 coord;
-	out vec2 tex_coord;
-
 	uniform mat4 projection;
+
+	out vec2 tex_coord;
 
 	void main() {
 		gl_Position = projection * vec4(coord.xy, 0.0, 1.0);
@@ -32,7 +32,7 @@ immutable char* fs_shader = "
 	uniform vec4 color;
 
 	void main() {
-		gl_FragColor = vec4(1, 1, 1, texture2D(tex, tex_coord).r) * color;
+		gl_FragColor = vec4(color.rgb, texture2D(tex, tex_coord).r);
 	}
 ";
 
@@ -93,7 +93,6 @@ struct FontAtlas {
 
 	}
 
-	// load libs
 	static void load() {
 
 		DerelictFT.load();
@@ -187,12 +186,7 @@ struct FontAtlas {
 		import std.algorithm.mutation : move;
 		move(shader, atlas.shader_);
 
-		Vertex4f[3] verts = [
-			Vertex4f([0.0f, 0.0f, 0.0f, 0.0f]),
-			Vertex4f([0.0f, 32.0f, 0.0f, 32.0f]),
-			Vertex4f([32.0f, 32.0f, 32.0f, 32.0f]),
-		];
-
+		Vertex4f[0] verts;
 		atlas.vertices_ = upload(verts[], DrawHint.DynamicDraw, DrawPrimitive.Triangles);
 
 		return Error.Success;
@@ -311,7 +305,7 @@ void main() {
 		Renderer.clearColour(0x428bca);
 
 		Mat4f[1] projection_data = [transposed_projection];
-		text_atlas.renderText(projection_data[], "Hello, World!", window.width / 2, window.height / 2, 1.0f, 1.0f, 0xFFF);
+		text_atlas.renderText(projection_data[], "Hello, World!", window.width / 2, window.height / 2, 1.0f, 1.0f, 0x000);
 
 		window.present();
 

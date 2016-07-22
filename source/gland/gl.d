@@ -78,7 +78,7 @@ const (char*) to(T : char*)(GLenum value) {
 } //to!(const (char*))(GLenum)
 
 /**
- * UDA's for defining stuff in vertex structures.
+ * UDA's for defining properties in vertex structures.
 */
 
 struct VertexAttribDivisor_ {
@@ -123,7 +123,7 @@ template TypeToGL(T) {
 	} else static if (is (T == ubyte) || is(T == void)) {
 		enum TypeToGL = GL_UNSIGNED_BYTE;
 	} else {
-		static assert (0, format("No type conversion found for: %s to OpenGL equivalent", T.stringof));
+		static assert (0, format("No type conversion found for: %s to OpenGL equivalent.", T.stringof));
 	}
 
 } // TypeToGL
@@ -544,7 +544,12 @@ enum TextureWrapping {
 
 enum TextureType {
 
-	Texture2D = GL_TEXTURE_2D
+	Texture1D = GL_TEXTURE_1D,
+	Texture2D = GL_TEXTURE_2D,
+	Texture3D = GL_TEXTURE_3D,
+
+	Texture1DArray = GL_TEXTURE_1D_ARRAY,
+	Texture2DArray = GL_TEXTURE_2D_ARRAY
 
 } // TextureType
 
@@ -848,6 +853,9 @@ static:
 	//GL_BLEND_DST
 	GLenum blend_dst;
 
+	//GL_CULL_FACE
+	bool cull_face;
+
 	/**
 	 * Framebuffer Control
 	*/
@@ -991,13 +999,26 @@ static:
 				glActiveTexture(GL_TEXTURE0);
 				glBindTexture(args[i].type, args[i].handle);
 
+			} else static if (is (T : Texture*[])) {
+
+				assert(args[i].length <= 16, "tried passing more than 16 textures?");
+
+				foreach (t_i, texture; args[i]) {
+					glActiveTexture(GL_TEXTURE0 + t_i);
+					glBindTexture(texture.type, texture.handle);
+				}
+
 			}
 
 		}
 
-		(params.do_blend_test) ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-		(params.do_face_culling) ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
-		(params.do_depth_test) ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
+		/**
+		 * TODO: make this less ugly
+		*/
+
+		setState(GL_BLEND, params.do_blend_test);
+		setState(GL_CULL_FACE, params.do_face_culling);
+		setState(GL_DEPTH_TEST, params.do_depth_test);
 
 		// basic
 		glDrawArrays(vao.type_, 0, vao.num_vertices_);
@@ -1009,6 +1030,39 @@ private:
 	/**
 	 * Internal Helpers, not public API.
 	*/
+
+	/**
+	 * Replaces glEnable/glDisable, doesn't set state if already set.
+	*/
+
+	@nogc nothrow
+	void setState(GLenum state_var, bool desired_state) {
+
+		import std.meta : AliasSeq;
+		import std.string : format;
+
+		state_switch : switch (state_var) {
+
+			alias StateSeq = AliasSeq!(GL_BLEND, blend_test, GL_CULL_FACE, cull_face, GL_DEPTH_TEST, depth_test);
+
+			foreach (i, S; StateSeq) {
+				static if (i % 2 == 0) {
+					case S: {
+						if (StateSeq[i + 1] != desired_state) {
+							desired_state ? glEnable(S) : glDisable(S);
+							StateSeq[i + 1] = desired_state;
+						}
+						break state_switch;
+					}
+				}
+			}
+
+			default:
+				assert(0, "unsupported state_var!");
+
+		}
+
+	} // setState
 
 	nothrow @nogc
 	bool isBound(alias name)() {
