@@ -46,6 +46,7 @@ struct Window {
 
 		if (window_) {
 			debug printf("Destroying Window. \n");
+			SDL_GL_DeleteContext(context_);
 			SDL_DestroyWindow(window_);
 			SDL_Quit();
 		}

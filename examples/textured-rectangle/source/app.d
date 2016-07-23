@@ -78,10 +78,11 @@ void main() {
 	}
 
 	// load graphics and stuff
-	auto texture_shader = TextureShader.compile(&vs_shader, &fs_shader);
+	TextureShader texture_shader;
+	auto shader_result = TextureShader.compile(texture_shader, &vs_shader, &fs_shader);
 
 	// check validity
-	if (!texture_shader.valid) {
+	if (shader_result != TextureShader.Error.Success) {
 		writefln("[MAIN] Shader compile failed, exiting!");
 		return; // exit now
 	}

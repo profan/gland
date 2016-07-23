@@ -321,6 +321,12 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 
 	@disable this(this);
 	@disable ref Shader opAssign(Shader);
+	
+	enum Error {
+	
+		Success = "Shader successfully compiled!"
+	
+	} // Error
 
 	static string createFunction(ShaderTuple[] shaders) {
 
@@ -330,7 +336,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 
 		auto buffer = appender!string();
 
-		buffer ~= q{static Shader compile(%s) {
+		buffer ~= q{static Error compile(ref Shader new_shader, %s) {
 			%s
 		}}.format(shaders.enumerate.map!(e => q{const (char*)* source_%d}.format(e.index)).joiner(","), createCompiler(shaders));
 
@@ -346,9 +352,6 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 		import std.string : format;
 
 		auto buffer = appender!string();
-
-		buffer ~= q{
-			Shader new_shader;};
 
 		foreach (i, shader; shaders) {
 		buffer ~= q{
@@ -392,7 +395,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 		}
 
 		buffer ~= q{
-			return new_shader;
+			return Error.Success;
 		};
 
 		return buffer.data();
@@ -809,10 +812,10 @@ mixin template RendererStateVars() {
 	bool blend_test;
 
 	//GL_BLEND_SRC
-	GLenum blend_src;
+	BlendFunc blend_src;
 
 	//GL_BLEND_DST
-	GLenum blend_dst;
+	BlendFunc blend_dst;
 
 	//GL_CULL_FACE
 	bool cull_face;
@@ -1036,7 +1039,11 @@ static:
 		setState(GL_SCISSOR_TEST, params.state.scissor_test);
 		
 		// blendaroni, TODO check if already set
-		glBlendFunc(params.blend_src, params.blend_dst);
+		if (blend_src != params.blend_src || blend_dst != params.blend_dst) {
+			glBlendFunc(params.blend_src, params.blend_dst);
+			blend_src = params.blend_src;
+			blend_dst = params.blend_dst;
+		}
 
 		// basic
 		glDrawArrays(vao.type_, 0, vao.num_vertices_);

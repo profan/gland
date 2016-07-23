@@ -73,10 +73,11 @@ void main() {
 	}
 
 	// load graphics and stuff
-	auto triangle_shader = TriangleShader.compile(&vs_shader, &fs_shader);
-
+	TriangleShader triangle_shader;
+	auto triangle_result = TriangleShader.compile(triangle_shader, &vs_shader, &fs_shader);
+	
 	// check validity
-	if (!triangle_shader.valid) {
+	if (triangle_result != TriangleShader.Error.Success) {
 		writefln("[MAIN] Shader compile failed, exiting!");
 		return; // exit now
 	}

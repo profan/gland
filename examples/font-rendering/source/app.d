@@ -285,7 +285,7 @@ void main() {
 
 		/* return from main if we failed, print stuff. */
 		case WindowCreationFailed, ContextCreationFailed:
-			writefln("[WIN] Error: %s", cast(string)result);
+			writefln("[WIN] Error: %s, exiting.", cast(string)result);
 			return;
 
 		/* we succeeded, just continue. */
@@ -300,16 +300,17 @@ void main() {
 	auto transposed_projection = transpose(projection);
 
 	// load graphics and stuff
-	auto text_shader = TextShader.compile(&vs_shader, &fs_shader);
-
-	FontAtlas text_atlas;
-	auto atlas_result = FontAtlas.create(text_atlas, "fonts/OpenSans-Bold.ttf", 48, text_shader);
+	TextShader text_shader;
+	auto shader_result = TextShader.compile(text_shader, &vs_shader, &fs_shader);
 
 	// check validity
-	if (!text_shader.valid) {
+	if (shader_result != TextShader.Error.Success) {
 		writefln("[MAIN] Shader compile failed, exiting!");
 		return; // exit now
 	}
+	
+	FontAtlas text_atlas;
+	auto atlas_result = FontAtlas.create(text_atlas, "fonts/OpenSans-Bold.ttf", 48, text_shader);
 
 	while (window.isAlive) {
 
@@ -323,7 +324,7 @@ void main() {
 
 		// cornflower blue, of course
 		Renderer.clearColour(0x428bca);
-
+		
 		Mat4f[1] projection_data = [transposed_projection];
 		text_atlas.renderText(projection_data[], "Hello, World!", window.width / 4, window.height / 2, 1.0f, 1.0f, 0xffa500);
 
