@@ -124,11 +124,11 @@ struct FontAtlas {
 
 	} // load
 	
-	static ~this() {
+	static unload() {
 		
 		FT_Done_FreeType(ft_);
 		
-	} // static ~this
+	} // unload
 
 	static Error create(ref FontAtlas atlas, in char* font_name, int font_size, ref TextShader shader) {
 
@@ -287,6 +287,7 @@ void main() {
 	// load libs
 	Window.load();
 	FontAtlas.load();
+	scope(exit) { FontAtlas.unload(); }
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
