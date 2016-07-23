@@ -29,10 +29,10 @@ immutable char* fs_shader = "
 	in vec2 tex_coord;
 
 	uniform sampler2D tex;
-	uniform vec4 color;
+	uniform vec4 colour;
 
 	void main() {
-		gl_FragColor = vec4(color.rgb, texture2D(tex, tex_coord).r);
+		gl_FragColor = vec4(colour.rgb, texture2D(tex, tex_coord).r);
 	}
 ";
 
@@ -43,7 +43,7 @@ alias TextShader = Shader!([
 		AttribTuple("coord", 0)
 	]),
 	ShaderTuple(ShaderType.FragmentShader, [])
-], Mat4f[], "projection", float[4], "color", Texture*, "tex");
+], Mat4f[], "projection", float[4], "colour", Texture*, "tex");
 
 alias Vec4f = float[4];
 
@@ -74,10 +74,14 @@ struct FontAtlas {
 	} // Vertex4f
 
 	enum Error {
-		Success = "FontAtlas successfully created."
+		Success = "FontAtlas successfully created.",
+		CouldNotOpenFont = "FreeType could not open font!"
 	} // Error
 
 	private {
+		
+		// FT LIB, this should probably go elsewhere, for now it is here
+		static FT_Library ft_;
 
 		VertexArray!Vertex4f vertices_;
 		TextShader shader_;
@@ -112,26 +116,32 @@ struct FontAtlas {
 
 		DerelictFT.missingSymbolCallback = &ignoreMissing;
 		DerelictFT.load();
+		
+		// load FreeType library
+		if (FT_Init_FreeType(&ft_)) { //TODO move this
+			printf("[FontAtlas] Could not init freetype.");
+		}
 
 	} // load
+	
+	static ~this() {
+		
+		FT_Done_FreeType(ft_);
+		
+	} // static ~this
 
 	static Error create(ref FontAtlas atlas, in char* font_name, int font_size, ref TextShader shader) {
 
 		// freetype shit
-		FT_Library ft;
 		FT_Face face;
 
-		if (FT_Init_FreeType(&ft)) { //TODO move this
-			printf("[FontAtlas] Could not init freetype.");
-		}
-
-		if (FT_New_Face(ft, font_name, 0, &face)) {
+		if (FT_New_Face(ft_, font_name, 0, &face)) {
 			printf("[FontAtlas] Could not open font.");
+			return Error.CouldNotOpenFont;
 		}
 
 		scope(exit) {
 			FT_Done_Face(face);
-			FT_Done_FreeType(ft);
 		}
 
 		FT_Set_Pixel_Sizes(face, 0, font_size);
@@ -311,6 +321,17 @@ void main() {
 	
 	FontAtlas text_atlas;
 	auto atlas_result = FontAtlas.create(text_atlas, "fonts/OpenSans-Bold.ttf", 48, text_shader);
+	
+	final switch (atlas_result) with (FontAtlas.Error) {
+		
+		case CouldNotOpenFont:
+			writefln("[MAIN] Could not open font: %s, exiting!", "fonts/OpenSans-Bold.ttf");
+			return; // exit
+		
+		case Success:
+			break;
+		
+	}
 
 	while (window.isAlive) {
 
