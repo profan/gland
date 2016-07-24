@@ -1024,12 +1024,19 @@ static:
 	} // clearColour
 
 	nothrow @nogc
+	void clearColour(ref SimpleFrameBuffer buffer, GLint rgb) {
+
+		glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle);
+		Renderer.clearColour(rgb);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	} // clearColour
+
+	nothrow @nogc
 	void draw(ShaderType, VertexArrayType, Args...)(ref SimpleFrameBuffer buffer, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle);
 		setViewport(buffer.width, buffer.height);
-
-		clearColour(0xFFF);
 
 		Renderer.draw(shader, vao, params, args);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

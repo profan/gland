@@ -207,12 +207,10 @@ void main() {
 		// default state, holds all OpenGL state params like blend state etc to be use for given draw call
 		DrawParams params = {};
 
-		// render to texture
+		// render to texture, also clear with ze blau
+		Renderer.clearColour(frame_buffer, 0x428bca);
 		Renderer.draw(frame_buffer, triangle_shader, vao, params);
 
-		// cornflower blue, of course
-		Renderer.clearColour(0x428bca);
-		
 		// now render given texture, woo!
 		Renderer.draw(texture_shader, rect_vao, params, &framebuffer_texture);
 
