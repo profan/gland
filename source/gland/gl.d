@@ -595,6 +595,9 @@ struct Texture {
 
 	}
 
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
+
 	@property @nogc nothrow {
 
 		uint width() { return width_; }
@@ -608,7 +611,6 @@ struct Texture {
 		Success = "Succesfully created Texture!"
 	} // Error
 
-	@disable this(this);
 	@disable ref Texture opAssign(ref Texture);
 
 	static Error create(DataType)(ref Texture texture, DataType[] texture_data, int width, int height, TextureParams params) {
@@ -653,9 +655,81 @@ struct Texture {
 
 	} // create
 
+	SimpleFrameBuffer.Error asSurface(ref SimpleFrameBuffer buffer, bool with_depth_buffer) {
+
+		return SimpleFrameBuffer.create(buffer, this, with_depth_buffer);
+
+	} // asSurface
+
+
 } // Texture
 
+struct SimpleFrameBuffer {
+
+	private {
+
+		GLuint fbo_;
+		GLuint depth_;
+
+		// cached, from texture
+		int width_;
+		int height_;
+
+	}
+
+	@property nothrow @nogc {
+
+		int width() { return width_; }
+		int height() { return height_; }
+
+	}
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
+
+	enum Error {
+		Success = "SimpleFrameBuffer successfully created!"
+	} // Error
+
+	static Error create(ref SimpleFrameBuffer buffer, ref Texture texture, bool with_depth_buffer) {
+
+		// from texture
+		buffer.width_ = texture.width;
+		buffer.height_ = texture.height;
+
+		// now set up frame buffers
+
+		glGenFramebuffers(1, &buffer.fbo_);
+		glBindFramebuffer(GL_FRAMEBUFFER, buffer.fbo_);
+
+		if (with_depth_buffer) {
+			glGenRenderbuffers(1, &buffer.depth_);
+			glBindRenderbuffer(GL_RENDERBUFFER, buffer.depth_);
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, texture.width, texture.height);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buffer.depth_);
+		}
+
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.handle, 0);
+
+		GLenum[1] draw_buffers = [GL_COLOR_ATTACHMENT0];
+		glDrawBuffers(1, draw_buffers.ptr);
+
+		return Error.Success;
+
+	} // create
+
+	@property
+	nothrow @nogc
+	GLuint handle() {
+		return fbo_;
+	} //handle
+
+} // SimpleFrameBuffer
+
 struct FrameBuffer {
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
 
 } // FrameBuffer
 
@@ -669,6 +743,9 @@ struct VertexArray(VT) {
 		uint num_vertices_;
 
 	}
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
 
 	@property
 	GLuint* handle() {
@@ -687,6 +764,9 @@ struct VertexBuffer(VT) {
 		DrawPrimitive prim_type;
 
 	}
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
 
 	@property
 	GLuint* handle() {
@@ -844,6 +924,17 @@ struct Renderer {
 static:
 
 	/**
+	 * viewport size
+	*/
+
+	int viewport_width_;
+	int viewport_height_;
+
+	// cached here
+	int current_viewport_width_;
+	int current_viewport_height_;
+
+	/**
 	 * data bindings
 	*/
 
@@ -885,6 +976,7 @@ static:
 	/**
 	 * Functions, this is the public API
 	*/
+
 	nothrow @nogc
 	void clearColour(GLint rgb) {
 
@@ -901,6 +993,20 @@ static:
 		glClear(GL_COLOR_BUFFER_BIT);
 
 	} // clearColour
+
+	nothrow @nogc
+	void draw(ShaderType, VertexArrayType, Args...)(ref SimpleFrameBuffer buffer, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
+
+		glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle);
+		glViewport(0, 0, buffer.width, buffer.height);
+
+		clearColour(0xFFF);
+
+		Renderer.draw(shader, vao, params, args);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	} // draw
 
 	nothrow @nogc
 	void draw(ShaderType, VertexArrayType, Args...)(ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
@@ -1037,7 +1143,7 @@ static:
 		setState(GL_DEPTH_TEST, params.state.depth_test);
 		setState(GL_STENCIL_TEST, params.state.stencil_test);
 		setState(GL_SCISSOR_TEST, params.state.scissor_test);
-		
+
 		// blendaroni, TODO check if already set
 		if (blend_src != params.blend_src || blend_dst != params.blend_dst) {
 			glBlendFunc(params.blend_src, params.blend_dst);
@@ -1059,6 +1165,17 @@ private:
 	/**
 	 * Replaces glEnable/glDisable, doesn't set state if already set.
 	*/
+
+	@nogc nothrow
+	void setViewport(int w, int h) {
+
+		if (current_viewport_width_ != w || current_viewport_height_ != h) {
+			current_viewport_width_ = w;
+			current_viewport_height_ = h;
+			glViewport(0, 0, current_viewport_width_, current_viewport_height_);
+		}
+
+	} // setViewport
 
 	@nogc nothrow
 	void setState(GLenum state_var, bool desired_state) {
