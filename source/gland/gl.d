@@ -655,6 +655,24 @@ struct Texture {
 
 	} // create
 
+	void resize(int w, int h) {
+
+		width_ = w;
+		height_ = h;
+
+		glTexImage2D(
+			texture_type_,
+			0,
+			internal_format_,
+			width_, height_,
+			0,
+			pixel_format_,
+			GL_BYTE,
+			null
+		);
+
+	} // resize
+
 	SimpleFrameBuffer.Error asSurface(ref SimpleFrameBuffer buffer, bool with_depth_buffer) {
 
 		return SimpleFrameBuffer.create(buffer, this, with_depth_buffer);
@@ -717,6 +735,17 @@ struct SimpleFrameBuffer {
 		return Error.Success;
 
 	} // create
+
+	void resize(int w, int h) {
+
+		width_ = w;
+		height_ = h;
+
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+		glBindRenderbuffer(GL_RENDERBUFFER, depth_);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width_, height_);
+
+	} // resize
 
 	@property
 	nothrow @nogc
