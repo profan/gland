@@ -187,31 +187,21 @@ void main() {
 
 		// up/down keys to adjust the texture and fbo size, try it!
 		if (window.isKeyDown(SDL_SCANCODE_UP)) {
-
 			if (texture_w < window.width) {
-
 				texture_w++;
 				texture_h++;
-
 				framebuffer_texture.resize(texture_w, texture_h);
 				frame_buffer.resize(texture_w, texture_h);
-
 			}
-
 		}
 
 		if (window.isKeyDown(SDL_SCANCODE_DOWN)) {
-
 			if (texture_w > 32) {
-
 				texture_w--;
 				texture_h--;
-
 				framebuffer_texture.resize(texture_w, texture_h);
 				frame_buffer.resize(texture_w, texture_h);
-
 			}
-
 		}
 
 		// default state, holds all OpenGL state params like blend state etc to be use for given draw call
