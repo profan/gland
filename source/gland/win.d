@@ -28,9 +28,9 @@ struct Window {
 
 	}
 
-	@property {
+	@property
+	const nothrow @nogc {
 
-		const nothrow @nogc
 		bool isAlive() { return alive_; }
 		int width() { return width_; }
 		int height() { return height_; }
@@ -45,7 +45,7 @@ struct Window {
 	~this() {
 
 		if (window_) {
-			debug printf("Destroying Window. \n");
+			debug printf("[GLAND] Destroying Window. \n");
 			SDL_GL_DeleteContext(context_);
 			SDL_DestroyWindow(window_);
 			SDL_Quit();

@@ -655,9 +655,9 @@ struct Texture {
 
 } // Texture
 
-struct Vertex {
+struct FrameBuffer {
 
-} // Vertex
+} // FrameBuffer
 
 struct VertexArray(VT) {
 
