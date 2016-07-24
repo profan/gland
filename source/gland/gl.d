@@ -320,7 +320,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 	mixin(q{GLint[%d] uniforms_;}.format(Uniforms.length / 2));
 
 	@disable this(this);
-	@disable ref Shader opAssign(Shader);
+	@disable ref Shader opAssign(ref Shader);
 	
 	enum Error {
 	
@@ -655,6 +655,12 @@ struct Texture {
 
 	} // create
 
+	~this() {
+
+		glDeleteTextures(1, &handle_);
+
+	} // ~this
+
 	void resize(int w, int h) {
 
 		width_ = w;
@@ -736,6 +742,13 @@ struct SimpleFrameBuffer {
 
 	} // create
 
+	~this() {
+
+		glDeleteRenderbuffers(1, &depth_);
+		glDeleteFramebuffers(1, &fbo_);
+
+	} // ~this
+
 	void resize(int w, int h) {
 
 		width_ = w;
@@ -751,7 +764,7 @@ struct SimpleFrameBuffer {
 	nothrow @nogc
 	GLuint handle() {
 		return fbo_;
-	} //handle
+	} // handle
 
 } // SimpleFrameBuffer
 
@@ -766,8 +779,8 @@ struct VertexArray(VT) {
 
 	private {
 
-		GLuint id_;
-		GLuint vbo_;
+		GLuint handle_;
+		GLuint vbo_; // TODO: this needs to go, codegen HO
 		DrawPrimitive type_;
 		uint num_vertices_;
 
@@ -776,9 +789,15 @@ struct VertexArray(VT) {
 	@disable this(this);
 	@disable ref typeof(this) opAssign(ref typeof(this));
 
+	~this() {
+
+		glDeleteVertexArrays(1, &handle_);
+
+	} // ~this
+
 	@property
 	GLuint* handle() {
-		return &id_;
+		return &handle_;
 	} // handle
 
 } // VertexArray
