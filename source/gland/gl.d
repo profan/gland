@@ -998,13 +998,15 @@ static:
 	void draw(ShaderType, VertexArrayType, Args...)(ref SimpleFrameBuffer buffer, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle);
-		glViewport(0, 0, buffer.width, buffer.height);
+		setViewport(buffer.width, buffer.height);
 
 		clearColour(0xFFF);
 
 		Renderer.draw(shader, vao, params, args);
-
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// reset here.. for now
+		setViewport(viewport_width_, viewport_height_);
 
 	} // draw
 

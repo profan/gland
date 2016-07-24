@@ -100,6 +100,8 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
+	Renderer.viewport_width_ = 640;
+	Renderer.viewport_height_ = 480;
 
 	final switch (result) with (Window.Error) {
 
@@ -188,8 +190,6 @@ void main() {
 		Renderer.clearColour(0x428bca);
 		
 		// now render given texture, woo!
-		import glad.gl.gl : glViewport;
-		glViewport(0, 0, window.width, window.height);
 		Renderer.draw(texture_shader, rect_vao, params, &framebuffer_texture);
 
 		window.present();
