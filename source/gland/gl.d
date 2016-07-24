@@ -520,11 +520,11 @@ enum InternalTextureFormat {
 enum PixelFormat {
 
 	Red = GL_RED,
-	Rg = GL_RG,
-	Rgb = GL_RGB,
-	Bgr = GL_BGR,
-	Rgba = GL_RGBA,
-	Bgra = GL_BGRA,
+	RG = GL_RG,
+	RGB = GL_RGB,
+	BGR = GL_BGR,
+	RGBA = GL_RGBA,
+	BGRA = GL_BGRA,
 
 	DepthComponent = GL_DEPTH_COMPONENT,
 	DepthStencil = GL_DEPTH_STENCIL
