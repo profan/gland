@@ -188,19 +188,27 @@ void main() {
 		// up/down keys to adjust the texture and fbo size, try it!
 		if (window.isKeyDown(SDL_SCANCODE_UP)) {
 			if (texture_w < window.width) {
+
 				texture_w++;
-				texture_h++;
+				// adjust according to w/h ratio of window size
+				texture_h = cast(int)(texture_w * (cast(real)window.height / cast(real)window.width));
+
 				framebuffer_texture.resize(texture_w, texture_h);
 				frame_buffer.resize(texture_w, texture_h);
+
 			}
 		}
 
 		if (window.isKeyDown(SDL_SCANCODE_DOWN)) {
-			if (texture_w > 32) {
+			if (texture_w > 24) {
+
 				texture_w--;
-				texture_h--;
+				// adjust according to w/h ratio of window size
+				texture_h = cast(int)(texture_w * (cast(real)window.height / cast(real)window.width));
+
 				framebuffer_texture.resize(texture_w, texture_h);
 				frame_buffer.resize(texture_w, texture_h);
+
 			}
 		}
 
