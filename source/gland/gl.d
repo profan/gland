@@ -598,7 +598,8 @@ struct Texture {
 	@disable this(this);
 	@disable ref typeof(this) opAssign(ref typeof(this));
 
-	@property @nogc nothrow {
+	@property
+	const @nogc nothrow {
 
 		uint width() { return width_; }
 		uint height() { return height_; }
@@ -661,20 +662,16 @@ struct Texture {
 
 	} // ~this
 
-	SimpleFrameBuffer.Error asSurface(ref SimpleFrameBuffer buffer, bool with_depth_buffer) {
+	SimpleFramebuffer.Error asSurface(ref SimpleFramebuffer buffer, bool with_depth_buffer) {
 
-		return SimpleFrameBuffer.create(buffer, this, with_depth_buffer);
+		return SimpleFramebuffer.create(buffer, this, with_depth_buffer);
 
 	} // asSurface
 
 
 } // Texture
 
-struct ImmutableTexture {
-
-} // ImmutableTexture
-
-struct SimpleFrameBuffer {
+struct SimpleFramebuffer {
 
 	private {
 
@@ -701,7 +698,7 @@ struct SimpleFrameBuffer {
 		Success = "SimpleFrameBuffer successfully created!"
 	} // Error
 
-	static Error create(ref SimpleFrameBuffer buffer, ref Texture texture, bool with_depth_buffer) {
+	static Error create(ref SimpleFramebuffer buffer, ref Texture texture, bool with_depth_buffer) {
 
 		// from texture
 		buffer.width_ = texture.width;
@@ -741,15 +738,20 @@ struct SimpleFrameBuffer {
 		return fbo_;
 	} // handle
 
-} // SimpleFrameBuffer
+} // SimpleFramebuffer
 
-struct FrameBuffer(bool with_depth_buffer) {
+enum WithDepthBuffer : bool {
+	Yes = true,
+	No = false
+} // WithDepthbuffer
+
+struct Framebuffer(WithDepthBuffer wdb = WithDepthBuffer.No) {
 
 	private {
 
 		GLuint fbo_;
 
-		static if (with_depth_buffer) {
+		static if (wdb) {
 			GLuint depth_;
 		}
 
@@ -758,7 +760,8 @@ struct FrameBuffer(bool with_depth_buffer) {
 
 	}
 
-	@property nothrow @nogc {
+	@property
+	nothrow @nogc {
 
 		int width() { return width_; }
 		int height() { return height_; }
@@ -776,6 +779,9 @@ struct FrameBuffer(bool with_depth_buffer) {
 
 		// from texture
 		auto texture_result = Texture.create(buffer.texture_, null, w, h); 
+		if (texture_result != Texture.Error.Success) {
+			assert(0, "failed creating framebuffer texture!");
+		}
 
 		// now set up frame buffer
 		glGenFramebuffers(1, &buffer.fbo_);
@@ -825,7 +831,11 @@ struct FrameBuffer(bool with_depth_buffer) {
 		return fbo_;
 	} // handle
 
-} // FrameBuffer
+} // Framebuffer
+
+struct PixelBuffer {
+
+} // PixelBuffer
 
 struct VertexArray(VT) {
 
@@ -1095,7 +1105,7 @@ static:
 	} // clearColour
 
 	nothrow @nogc
-	void clearColour(ref SimpleFrameBuffer buffer, GLint rgb) {
+	void clearColour(ref SimpleFramebuffer buffer, GLint rgb) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle);
 		Renderer.clearColour(rgb);
@@ -1104,7 +1114,7 @@ static:
 	} // clearColour
 
 	nothrow @nogc
-	void draw(ShaderType, VertexArrayType, Args...)(ref SimpleFrameBuffer buffer, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
+	void draw(ShaderType, VertexArrayType, Args...)(ref SimpleFramebuffer buffer, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle);
 		setViewport(buffer.width, buffer.height);

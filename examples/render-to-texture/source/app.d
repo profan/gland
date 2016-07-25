@@ -127,7 +127,7 @@ void main() {
 	auto texture_result = Texture.create(framebuffer_texture, null, texture_w, texture_h, tex_params);
 	
 	// create a frame buffer from this texture
-	SimpleFrameBuffer frame_buffer;
+	SimpleFramebuffer frame_buffer;
 	auto framebuffer_result = framebuffer_texture.asSurface(frame_buffer, false);
 
 	// load shader for drawing textured thing
