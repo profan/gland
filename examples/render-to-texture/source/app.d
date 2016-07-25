@@ -118,9 +118,8 @@ void main() {
 	}
 
 	// hold state for current x, y size of framebuffer texture
-	static int texture_w, texture_h;
-	texture_w = window.width / 8;
-	texture_h = window.height / 8;
+	int texture_w = window.width / 8;
+	int texture_h = window.height / 8;
 
 	// create texture to render to
 	Texture framebuffer_texture;
