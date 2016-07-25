@@ -661,24 +661,6 @@ struct Texture {
 
 	} // ~this
 
-	void resize(int w, int h) {
-
-		width_ = w;
-		height_ = h;
-
-		glTexImage2D(
-			texture_type_,
-			0,
-			internal_format_,
-			width_, height_,
-			0,
-			pixel_format_,
-			GL_BYTE,
-			null
-		);
-
-	} // resize
-
 	SimpleFrameBuffer.Error asSurface(ref SimpleFrameBuffer buffer, bool with_depth_buffer) {
 
 		return SimpleFrameBuffer.create(buffer, this, with_depth_buffer);
@@ -687,6 +669,10 @@ struct Texture {
 
 
 } // Texture
+
+struct ImmutableTexture {
+
+} // ImmutableTexture
 
 struct SimpleFrameBuffer {
 
@@ -749,17 +735,6 @@ struct SimpleFrameBuffer {
 
 	} // ~this
 
-	void resize(int w, int h) {
-
-		width_ = w;
-		height_ = h;
-
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
-		glBindRenderbuffer(GL_RENDERBUFFER, depth_);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width_, height_);
-
-	} // resize
-
 	@property
 	nothrow @nogc
 	GLuint handle() {
@@ -768,10 +743,87 @@ struct SimpleFrameBuffer {
 
 } // SimpleFrameBuffer
 
-struct FrameBuffer {
+struct FrameBuffer(bool with_depth_buffer) {
+
+	private {
+
+		GLuint fbo_;
+
+		static if (with_depth_buffer) {
+			GLuint depth_;
+		}
+
+		// texture
+		Texture texture_;
+
+	}
+
+	@property nothrow @nogc {
+
+		int width() { return width_; }
+		int height() { return height_; }
+
+	}
 
 	@disable this(this);
 	@disable ref typeof(this) opAssign(ref typeof(this));
+
+	enum Error {
+		Success = "FrameBuffer successfully created!"
+	} // Error
+
+	static Error create(FrameBufferType)(ref FrameBufferType buffer, int w, int h) {
+
+		// from texture
+		auto texture_result = Texture.create(buffer.texture_, null, w, h); 
+
+		// now set up frame buffer
+		glGenFramebuffers(1, &buffer.fbo_);
+		glBindFramebuffer(GL_FRAMEBUFFER, buffer.fbo_);
+
+		static if (with_depth_buffer) {
+			glGenRenderbuffers(1, &buffer.depth_);
+			glBindRenderbuffer(GL_RENDERBUFFER, buffer.depth_);
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, buffer.texture_.width, buffer.texture_.height);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buffer.depth_);
+		}
+
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.handle, 0);
+
+		GLenum[1] draw_buffers = [GL_COLOR_ATTACHMENT0];
+		glDrawBuffers(1, draw_buffers.ptr);
+
+		return Error.Success;
+
+	} // create
+
+	~this() {
+
+		static if (with_depth_buffer) {
+			glDeleteRenderbuffers(1, &depth_);
+		}
+
+		glDeleteFramebuffers(1, &fbo_);
+
+	} // ~this
+
+	void resize(int w, int h) {
+
+		texture_.resize(w, h);
+
+		static if (with_depth_buffer) {
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+			glBindRenderbuffer(GL_RENDERBUFFER, depth_);
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width_, height_);
+		}
+
+	} // resize
+
+	@property
+	nothrow @nogc
+	GLuint handle() {
+		return fbo_;
+	} // handle
 
 } // FrameBuffer
 

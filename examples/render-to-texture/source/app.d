@@ -128,7 +128,7 @@ void main() {
 	
 	// create a frame buffer from this texture
 	SimpleFrameBuffer frame_buffer;
-	auto framebuffer_result = framebuffer_texture.asSurface(frame_buffer, true);
+	auto framebuffer_result = framebuffer_texture.asSurface(frame_buffer, false);
 
 	// load shader for drawing textured thing
 	TextureShader texture_shader;
@@ -182,33 +182,6 @@ void main() {
 		// check if it's time to quit
 		if (window.isKeyDown(SDL_SCANCODE_ESCAPE)) {
 			window.quit();
-		}
-
-		// up/down keys to adjust the texture and fbo size, try it!
-		if (window.isKeyDown(SDL_SCANCODE_UP)) {
-			if (texture_w < window.width) {
-
-				texture_w++;
-				// adjust according to w/h ratio of window size
-				texture_h = cast(int)(texture_w * (cast(real)window.height / cast(real)window.width));
-
-				framebuffer_texture.resize(texture_w, texture_h);
-				frame_buffer.resize(texture_w, texture_h);
-
-			}
-		}
-
-		if (window.isKeyDown(SDL_SCANCODE_DOWN)) {
-			if (texture_w > 24) {
-
-				texture_w--;
-				// adjust according to w/h ratio of window size
-				texture_h = cast(int)(texture_w * (cast(real)window.height / cast(real)window.width));
-
-				framebuffer_texture.resize(texture_w, texture_h);
-				frame_buffer.resize(texture_w, texture_h);
-
-			}
 		}
 
 		// default state, holds all OpenGL state params like blend state etc to be use for given draw call
