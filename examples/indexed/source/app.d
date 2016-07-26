@@ -120,7 +120,7 @@ void main() {
 
 	auto vertex_data = VertexData(vertices, indices);
 
-	// upload vertices and indexes, get back vao to render with
+	// upload vertices and indices, get back vao to render with
 	auto vao = ElementsVAO.upload(vertex_data, DrawPrimitive.Triangles);
 
 	while (window.isAlive) {
