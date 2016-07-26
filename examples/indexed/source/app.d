@@ -93,13 +93,13 @@ void main() {
 		Vertex2f3f[] vertices;
 
 		@(DrawHint.StaticDraw)
-		uint[] indexes;
+		uint[] indices;
 
 		@property
 		nothrow @nogc
 		@VertexCountProvider
 		uint numVertices() {
-			return cast(uint)indexes.length;
+			return cast(uint)indices.length;
 		} // numVertices
 
 	} // VertexData
@@ -112,13 +112,13 @@ void main() {
 		Vertex2f3f([-0.5f, 0.5f], [0.0f, 1.0f, 0.0f]), // bottom left
 	];
 
-	//declare ebo data
-	uint[6] indexes = [
+	// declare ebo data
+	uint[6] indices = [
 		0, 1, 2,
 		2, 3, 0
 	];
 
-	auto vertex_data = VertexData(vertices, indexes);
+	auto vertex_data = VertexData(vertices, indices);
 
 	// upload vertices and indexes, get back vao to render with
 	auto vao = ElementsVAO.upload(vertex_data, DrawPrimitive.Triangles);
