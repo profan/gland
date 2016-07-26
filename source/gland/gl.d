@@ -837,6 +837,103 @@ struct PixelBuffer {
 
 } // PixelBuffer
 
+struct VertexArrayT(VT...) {
+
+	alias DrawFunction = VT[$-1];
+	static assert(is(typeof(DrawFunction) : DrawType), "expected last argument in template arguments to be of type DrawType");
+
+	private {
+
+		GLuint handle_;
+		GLuint[VT.length - 1] vbos_;
+		DrawPrimitive type_;
+		uint num_vertices_;
+
+	}
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
+
+	nothrow @nogc
+	static auto upload(Args...)(Args args) {
+
+		typeof(this) vao;
+
+		with (vao) {
+
+			glGenVertexArrays(1, vao.handle);
+			Renderer.bindVertexArray(vao);
+
+			// GENERATE ALL THE VBOS
+			glGenBuffers(cast(int)(VT.length - 1), vbos_.ptr);
+
+			foreach (a_i, T; args) {
+
+				enum cur_index = a_i / 2;
+
+				static if (a_i % 2 != 0) {
+					continue;
+				} else static if (is(typeof(T) : DrawPrimitive)) {
+					type_ = T;
+				} else { // UPLOAD. ALL. THE. THINGS.
+
+					alias VertexType = typeof(args[a_i][0]);
+					Renderer.bindBuffer(VT[cur_index], vbos_[cur_index]);
+					glBufferData(VT[cur_index], T.sizeof * args[a_i].length, args[a_i].ptr, args[a_i+1]);
+
+					static if (VT[cur_index] == BufferTarget.ElementArrayBuffer) {
+						num_vertices_ = args[a_i].length;
+						continue;
+					} else {
+
+						foreach (i, m; PODMembers!VertexType) {
+
+							import std.traits : isArray;
+
+							alias MemberType = typeof(__traits(getMember, VertexType, m));
+							enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
+
+							static if (isArray!MemberType) {
+								alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
+							} else {
+								alias ElementType = MemberType;
+							}
+
+							glEnableVertexAttribArray(i);
+							glVertexAttribPointer(i,
+								MemberType.sizeof / ElementType.sizeof,
+								TypeToGL!ElementType,
+								GL_FALSE, // normalization
+								VertexType.sizeof, // stride to jump
+								cast(const(void)*)MemberOffset
+							);
+
+						}
+
+					}
+
+				}
+			}
+
+		}
+
+		return vao;
+
+	} // upload
+
+	~this() {
+
+		glDeleteVertexArrays(1, &handle_);
+
+	} // ~this
+
+	@property
+	GLuint* handle() {
+		return &handle_;
+	} // handle
+
+} // VertexArrayT
+
 struct VertexArray(VT) {
 
 	private {
@@ -936,6 +1033,16 @@ void update(VertexType)(ref VertexArray!VertexType vao, in VertexType[] vertices
 	}
 
 } // update
+
+enum DrawType {
+
+	DrawArrays,
+	DrawArraysInstanced,
+
+	DrawElements,
+	DrawElementsInstanced
+
+} // DrawType
 
 nothrow @nogc
 auto upload(VertexType)(in VertexType[] vertices, DrawHint draw_hint, DrawPrimitive prim_type = DrawPrimitive.Triangles) {
@@ -1271,7 +1378,30 @@ static:
 		}
 
 		// basic
-		glDrawArrays(vao.type_, 0, vao.num_vertices_);
+		import std.traits : hasMember;
+		static if (hasMember!(VertexArrayType, "DrawFunction")) {
+
+			static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
+				glDrawArrays(vao.type_, 0, vao.num_vertices_);
+			} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
+				assert(0, "NOT IMPLEMENTED WOW FUCK");
+			} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
+				glDrawElements(vao.type_, vao.num_vertices_, GL_UNSIGNED_INT, cast(void*)0);
+			} else static if (VertexArrayType.DrawFunction == DrawType.DrawElementsInstanced) {
+				glDrawElementsInstanced(vao.type_, vao.num_vertices_, GL_UNSIGNED_INT, 0);
+			}
+
+		} else {
+			glDrawArrays(vao.type_, 0, vao.num_vertices_);
+		}
+
+		// when instanced
+
+		// when GL_ELEMENT_ARRAY_BUFFER
+		// glDrawElements(vao.type_, vao.num_vertices_, GL_UNSIGNED_INT, 0);
+
+		// when also instanced
+		// glDrawElementsInstanced(vao.type_,
 
 	} // draw
 
@@ -1400,7 +1530,7 @@ private:
 	} // bindTexture
 
 	nothrow @nogc
-	bool bindVertexArray(VertexType)(ref VertexArray!VertexType vao) {
+	bool bindVertexArray(VertexArrayType)(ref VertexArrayType vao) {
 
 		if (vertex_array_buffer_binding == *vao.handle) {
 			return false;

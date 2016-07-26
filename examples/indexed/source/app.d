@@ -50,6 +50,12 @@ struct Vertex2f3f {
 
 } // Vertex2f3f
 
+struct Vertex1ui {
+
+	uint index;
+
+} // Vertex1ui
+
 void main() {
 
 	// load libs
@@ -82,21 +88,33 @@ void main() {
 		return; // exit now
 	}
 
-	// declare vertex data
-	Vertex2f3f[6] vertices = [
+	// declare our VAO type we will be using, also describes the data format and drawcall to use
+	alias ElementsVAO = VertexArrayT!(
+		BufferTarget.ArrayBuffer,
+		BufferTarget.ElementArrayBuffer,
+		DrawType.DrawElements
+	);
 
+	// declare vbo data
+	Vertex2f3f[4] vertices = [
 		Vertex2f3f([-0.5f, -0.5f], [0.0f, 0.0f, 0.0f]), // top left
 		Vertex2f3f([0.5f, -0.5f], [1.0f, 0.0f, 0.0f]), // top right
 		Vertex2f3f([0.5f, 0.5f], [1.0f, 1.0f, 0.0f]), // bottom right
-
-		Vertex2f3f([-0.5f, -0.5f], [0.0f, 0.0f, 0.0f]), // top left
 		Vertex2f3f([-0.5f, 0.5f], [0.0f, 1.0f, 0.0f]), // bottom left
-		Vertex2f3f([0.5f, 0.5f], [1.0f, 1.0f, 0.0f]) // bottom right
-
 	];
 
-	// now, upload vertices
-	auto vao = vertices.upload(DrawHint.StaticDraw, DrawPrimitive.Triangles);
+	//declare ebo data
+	Vertex1ui[6] indexes = [
+		Vertex1ui(0), Vertex1ui(1), Vertex1ui(2),
+		Vertex1ui(2), Vertex1ui(3), Vertex1ui(0)
+	];
+
+	// upload vertices and indexes, get back vao to render with
+	auto vao = ElementsVAO.upload(
+		vertices, DrawHint.StaticDraw,
+		indexes, DrawHint.StaticDraw,
+		DrawPrimitive.Triangles
+	);
 
 	while (window.isAlive) {
 
