@@ -837,15 +837,15 @@ struct PixelBuffer {
 
 } // PixelBuffer
 
-struct VertexArrayT(VT...) {
+struct VertexArrayT(BufferTarget[] buffers, DrawType draw_function) {
 
-	alias DrawFunction = VT[$-1];
+	alias DrawFunction = draw_function;
 	static assert(is(typeof(DrawFunction) : DrawType), "expected last argument in template arguments to be of type DrawType");
 
 	private {
 
 		GLuint handle_;
-		GLuint[VT.length - 1] vbos_;
+		GLuint[buffers.length] vbos_;
 		DrawPrimitive type_;
 		uint num_vertices_;
 
@@ -865,25 +865,27 @@ struct VertexArrayT(VT...) {
 			Renderer.bindVertexArray(vao);
 
 			// GENERATE ALL THE VBOS
-			glGenBuffers(cast(int)(VT.length - 1), vbos_.ptr);
+			glGenBuffers(buffers.length, vbos_.ptr);
 
-			foreach (a_i, T; args) {
+			foreach (a_i, arg; args) {
 
 				enum cur_index = a_i / 2;
 
-				static if (a_i % 2 != 0) {
-					continue;
-				} else static if (is(typeof(T) : DrawPrimitive)) {
-					type_ = T;
-				} else { // UPLOAD. ALL. THE. THINGS.
+				static if (is(typeof(arg) : DrawPrimitive)) {
+
+					type_ = arg;
+
+				} else static if (a_i % 2 == 0) {
 
 					alias VertexType = typeof(args[a_i][0]);
-					Renderer.bindBuffer(VT[cur_index], vbos_[cur_index]);
-					glBufferData(VT[cur_index], T.sizeof * args[a_i].length, args[a_i].ptr, args[a_i+1]);
+					Renderer.bindBuffer(buffers[cur_index], vbos_[cur_index]);
+					glBufferData(buffers[cur_index], arg.sizeof * arg.length, arg.ptr, args[a_i+1]);
 
-					static if (VT[cur_index] == BufferTarget.ElementArrayBuffer) {
-						num_vertices_ = args[a_i].length;
+					static if (buffers[cur_index] == BufferTarget.ElementArrayBuffer) {
+
+						num_vertices_ = arg.length;
 						continue;
+
 					} else {
 
 						foreach (i, m; PODMembers!VertexType) {
@@ -909,15 +911,16 @@ struct VertexArrayT(VT...) {
 							);
 
 						}
-
 					}
 
+				} else {
+					continue;
 				}
 			}
 
-		}
+			return vao;
 
-		return vao;
+		}
 
 	} // upload
 

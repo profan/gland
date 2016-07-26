@@ -90,8 +90,7 @@ void main() {
 
 	// declare our VAO type we will be using, also describes the data format and drawcall to use
 	alias ElementsVAO = VertexArrayT!(
-		BufferTarget.ArrayBuffer,
-		BufferTarget.ElementArrayBuffer,
+		[BufferTarget.ArrayBuffer, BufferTarget.ElementArrayBuffer],
 		DrawType.DrawElements
 	);
 
