@@ -42,12 +42,6 @@ alias TriangleShader = Shader!(
 	]
 );
 
-// declare our VAO type we will be using, also describes the data format and drawcall to use
-alias ElementsVAO = VertexArrayT!(
-	[BufferTarget.ArrayBuffer, BufferTarget.ElementArrayBuffer],
-	DrawType.DrawElements
-);
-
 struct Vertex2f3f {
 
 	float[2] position;
@@ -90,9 +84,11 @@ void main() {
 	struct VertexData {
 
 		@(DrawHint.StaticDraw)
+		@(BufferTarget.ArrayBuffer)
 		Vertex2f3f[] vertices;
 
 		@(DrawHint.StaticDraw)
+		@(BufferTarget.ElementArrayBuffer)
 		uint[] indices;
 
 		@property
@@ -103,6 +99,9 @@ void main() {
 		} // numVertices
 
 	} // VertexData
+
+	// VAO TYPE YES
+	alias ElementsVAO = VertexArrayT!(VertexData, DrawType.DrawElements);
 
 	// declare vbo data
 	Vertex2f3f[4] vertices = [

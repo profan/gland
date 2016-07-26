@@ -861,15 +861,16 @@ template MembersByUDA(T, alias attribute) {
 
 } // MembersByUDA
 
-struct VertexArrayT(BufferTarget[] buffers, DrawType draw_function) {
+struct VertexArrayT(VDataType, DrawType draw_function) {
 
 	alias DrawFunction = draw_function;
+	enum VboCount = MembersByUDA!(VDataType, DrawHint.StaticDraw).length;
 	static assert(is(typeof(DrawFunction) : DrawType), "expected last argument in template arguments to be of type DrawType");
 
 	private {
 
 		GLuint handle_;
-		GLuint[buffers.length] vbos_;
+		GLuint[VboCount] vbos_;
 		DrawPrimitive type_;
 		uint num_vertices_;
 
@@ -881,7 +882,7 @@ struct VertexArrayT(BufferTarget[] buffers, DrawType draw_function) {
 	@disable ref typeof(this) opAssign(ref typeof(this));
 
 	nothrow @nogc
-	static auto upload(VDataType)(ref VDataType data, DrawPrimitive type) {
+	static auto upload(ref VDataType data, DrawPrimitive type) {
 
 		import std.traits : isArray, isCallable, hasUDA, FieldNameTuple, getSymbolsByUDA, getUDAs;
 
@@ -891,18 +892,20 @@ struct VertexArrayT(BufferTarget[] buffers, DrawType draw_function) {
 		Renderer.bindVertexArray(vao);
 
 		// GENERATE ALL THE VBOS
-		glGenBuffers(buffers.length, vao.vbos_.ptr);
+		glGenBuffers(VboCount, vao.vbos_.ptr);
 
 		foreach (v_i, VS; MembersByUDA!(VDataType, DrawHint.StaticDraw)) {
 
 			alias VT = typeof(__traits(getMember, VDataType, VS));
 
 			DrawHint draw_hint;
+			enum buffer_target = getUDAs!(__traits(getMember, VDataType, VS), BufferTarget)[0];
 
 			// process UDAs for type
-			foreach (u_i, uda; getUDAs!(VDataType, VS)) {
+			foreach (u_i, uda; __traits(getAttributes, __traits(getMember, VDataType, VS))) {
 				static if (is(typeof(uda) == DrawHint)) {
 					draw_hint = uda;
+				} else static if (is(typeof(uda) == BufferTarget)) {
 				}
 			}
 
@@ -910,18 +913,18 @@ struct VertexArrayT(BufferTarget[] buffers, DrawType draw_function) {
 
 				alias VertexType = typeof(__traits(getMember, VDataType, VS)[0]);
 
-				Renderer.bindBuffer(buffers[v_i], vao.vbos_[v_i]);
-				glBufferData(buffers[v_i],
+				Renderer.bindBuffer(buffer_target, vao.vbos_[v_i]);
+				glBufferData(buffer_target,
 					VertexType.sizeof * __traits(getMember, data, VS).length,
 					__traits(getMember, data, VS).ptr,
 					draw_hint
 				);
 
-				static if (buffers[v_i] == BufferTarget.ElementArrayBuffer) {
+				static if (buffer_target == BufferTarget.ElementArrayBuffer) {
 					vao.draw_type_ = TypeToGL!VertexType;
 				}
 
-				static if (buffers[v_i] != BufferTarget.ElementArrayBuffer) {
+				static if (buffer_target != BufferTarget.ElementArrayBuffer) {
 					foreach (i, m; PODMembers!VertexType) {
 						alias MemberType = typeof(__traits(getMember, VertexType, m));
 						enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
