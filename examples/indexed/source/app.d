@@ -49,6 +49,28 @@ struct Vertex2f3f {
 
 } // Vertex2f3f
 
+struct VertexData {
+
+	@(DrawHint.StaticDraw)
+	@(BufferTarget.ArrayBuffer)
+	Vertex2f3f[] vertices;
+
+	@(DrawHint.StaticDraw)
+	@(BufferTarget.ElementArrayBuffer)
+	uint[] indices;
+
+	@property
+	nothrow @nogc
+	@VertexCountProvider
+	uint numVertices() {
+		return cast(uint)indices.length;
+	} // numVertices
+
+} // VertexData
+
+// VAO TYPE YES
+alias ElementsVAO = VertexArrayT!(VertexData, DrawType.DrawElements);
+
 void main() {
 
 	// load libs
@@ -81,27 +103,6 @@ void main() {
 		return; // exit now
 	}
 
-	struct VertexData {
-
-		@(DrawHint.StaticDraw)
-		@(BufferTarget.ArrayBuffer)
-		Vertex2f3f[] vertices;
-
-		@(DrawHint.StaticDraw)
-		@(BufferTarget.ElementArrayBuffer)
-		uint[] indices;
-
-		@property
-		nothrow @nogc
-		@VertexCountProvider
-		uint numVertices() {
-			return cast(uint)indices.length;
-		} // numVertices
-
-	} // VertexData
-
-	// VAO TYPE YES
-	alias ElementsVAO = VertexArrayT!(VertexData, DrawType.DrawElements);
 
 	// declare vbo data
 	Vertex2f3f[4] vertices = [
