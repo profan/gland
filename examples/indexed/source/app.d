@@ -35,13 +35,18 @@ immutable char* fs_shader = "
 
 alias Mat4f = float[4][4];
 
-alias TriangleShader = Shader!([
-	ShaderTuple(ShaderType.VertexShader, [
+alias TriangleShader = Shader!(
+	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0),
 		AttribTuple("colour", 1)
-	]),
-	ShaderTuple(ShaderType.FragmentShader, [])
-]);
+	]
+);
+
+// declare our VAO type we will be using, also describes the data format and drawcall to use
+alias ElementsVAO = VertexArrayT!(
+	[BufferTarget.ArrayBuffer, BufferTarget.ElementArrayBuffer],
+	DrawType.DrawElements
+);
 
 struct Vertex2f3f {
 
@@ -49,12 +54,6 @@ struct Vertex2f3f {
 	float[3] colour;
 
 } // Vertex2f3f
-
-struct Vertex1ui {
-
-	uint index;
-
-} // Vertex1ui
 
 void main() {
 
@@ -88,11 +87,22 @@ void main() {
 		return; // exit now
 	}
 
-	// declare our VAO type we will be using, also describes the data format and drawcall to use
-	alias ElementsVAO = VertexArrayT!(
-		[BufferTarget.ArrayBuffer, BufferTarget.ElementArrayBuffer],
-		DrawType.DrawElements
-	);
+	struct VertexData {
+
+		@(DrawHint.StaticDraw)
+		Vertex2f3f[] vertices;
+
+		@(DrawHint.StaticDraw)
+		uint[] indexes;
+
+		@property
+		nothrow @nogc
+		@VertexCountProvider
+		uint numVertices() {
+			return cast(uint)indexes.length;
+		} // numVertices
+
+	} // VertexData
 
 	// declare vbo data
 	Vertex2f3f[4] vertices = [
@@ -103,17 +113,15 @@ void main() {
 	];
 
 	//declare ebo data
-	Vertex1ui[6] indexes = [
-		Vertex1ui(0), Vertex1ui(1), Vertex1ui(2),
-		Vertex1ui(2), Vertex1ui(3), Vertex1ui(0)
+	uint[6] indexes = [
+		0, 1, 2,
+		2, 3, 0
 	];
 
+	auto vertex_data = VertexData(vertices, indexes);
+
 	// upload vertices and indexes, get back vao to render with
-	auto vao = ElementsVAO.upload(
-		vertices, DrawHint.StaticDraw,
-		indexes, DrawHint.StaticDraw,
-		DrawPrimitive.Triangles
-	);
+	auto vao = ElementsVAO.upload(vertex_data, DrawPrimitive.Triangles);
 
 	while (window.isAlive) {
 

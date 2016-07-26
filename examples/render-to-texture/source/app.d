@@ -100,8 +100,8 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
-	Renderer.viewport_width_ = 640;
-	Renderer.viewport_height_ = 480;
+	Renderer.viewport_width_ = window.width;
+	Renderer.viewport_height_ = window.height;
 
 	final switch (result) with (Window.Error) {
 
@@ -188,7 +188,6 @@ void main() {
 		DrawParams params = {};
 
 		// render to texture, also clear with ze blau
-		Renderer.clearColour(frame_buffer, 0x428bca);
 		Renderer.draw(frame_buffer, triangle_shader, vao, params);
 
 		// now render given texture, woo!

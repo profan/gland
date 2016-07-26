@@ -89,8 +89,13 @@ void main() {
 		Vertex2f3f([0.5f, -0.5f], [0.0f, 0.0f, 1.0f]) // triangle right
 	];
 
+	alias ElementsVAO = VertexArrayT!(
+		[BufferTarget.ArrayBuffer],
+		DrawType.DrawArrays
+	);
+
 	// now, upload vertices
-	auto vao = vertices.upload(DrawHint.StaticDraw, DrawPrimitive.Triangles);
+	auto vao = ElementsVAO.upload(vertices, DrawHint.StaticDraw, DrawPrimitive.Triangles);
 
 	while (window.isAlive) {
 
