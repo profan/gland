@@ -978,6 +978,7 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 
 			alias VT = typeof(__traits(getMember, VDataType, VS));
 			enum uda_tuple = CollectUDAs!(__traits(getMember, VDataType, VS))();
+			uint current_attrib_index = 0;
 
 			static if (isArray!VT) {
 
@@ -998,12 +999,16 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 				);
 
 				static if (!is_new) {
+
 					continue;
+
 				} else static if (uda_tuple.buffer_target == BufferTarget.ArrayBuffer) {
-					foreach (i, m; PODMembers!VertexType) {
+
+					foreach (m; PODMembers!VertexType) {
+
+						uint i = current_attrib_index;
 						alias MemberType = typeof(__traits(getMember, VertexType, m));
 						enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
-
 						enum IsNormalized = hasUDA!(__traits(getMember, VertexType, m), Normalized_);
 
 						static if (isArray!MemberType) {
@@ -1020,6 +1025,9 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 							VertexType.sizeof, // stride to jump
 							cast(const(void)*)MemberOffset
 						);
+
+						current_attrib_index += 1;
+
 					}
 				}
 
@@ -1207,13 +1215,15 @@ struct Device {
 
 } // Device
 
+alias ScissorBox = Tuple!(int, "x", int, "y", uint, "w", uint, "h");
+
 mixin template RendererStateVars() {
 
 	//GL_SCISSOR_TEST
 	bool scissor_test;
 
 	//GL_SCISSOR_BOX
-	GLint[4] scissor_box;
+	ScissorBox scissor_box;
 
 	//GL_STENCIL_TEST
 	bool stencil_test;
@@ -1503,7 +1513,7 @@ static:
 
 		if (scissor_test) {
 			scissor_box = params.state.scissor_box;
-			glScissor(scissor_box[0], scissor_box[1], scissor_box[2], scissor_box[3]);
+			glScissor(scissor_box.expand);
 		}
 
 		// blendaroni, TODO check if already set
