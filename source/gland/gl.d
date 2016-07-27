@@ -82,14 +82,12 @@ const (char*) to(T : char*)(GLenum value) {
 */
 
 struct VertexAttribDivisor_ {
-
 	GLuint divisor;
-
 } // VertexAttribDivisor
 
-@property vertexAttribDivisor(GLuint divisor) {
+@property VertexAttribDivisor(GLuint divisor) {
 	return VertexAttribDivisor_(divisor);
-} // vertexAttribDivisor
+} // VertexAttribDivisor
 
 // attribute normalization in structures
 struct Normalized_ {
@@ -877,6 +875,14 @@ auto VertexCountProvider() {
 	return VertexCountProvider_();
 } // VertexCountProvider
 
+struct InstanceCountProvider_ {
+} // InstanceCountProvider_
+
+@property
+auto InstanceCountProvider() {
+	return InstanceCountProvider_();
+} // InstanceCountProvider
+
 struct OffsetProvider_ {
 } // OffsetProvider
 
@@ -941,6 +947,7 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 		GLuint[VboCount] vbos_;
 		DrawPrimitive type_;
 		uint num_vertices_;
+		uint num_instances_;
 
 		GLenum draw_type_;
 
@@ -973,12 +980,13 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 	private static auto uploadData(bool is_new)(ref typeof(this) vao, ref VDataType data, DrawPrimitive type) {
 
 		import std.traits : isArray, isCallable, hasUDA, FieldNameTuple, getSymbolsByUDA, getUDAs;
+		
+		uint current_attrib_index = 0;
 
 		foreach (v_i, VS; All) {
 
 			alias VT = typeof(__traits(getMember, VDataType, VS));
 			enum uda_tuple = CollectUDAs!(__traits(getMember, VDataType, VS))();
-			uint current_attrib_index = 0;
 
 			static if (isArray!VT) {
 
@@ -1004,29 +1012,76 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 
 				} else static if (uda_tuple.buffer_target == BufferTarget.ArrayBuffer) {
 
-					foreach (m; PODMembers!VertexType) {
+					alias VertexAttribUDAs = getUDAs!(__traits(getMember, VDataType, VS), VertexAttribDivisor_);
+					static if (VertexAttribUDAs.length > 0) {
+						pragma(msg, "WAH");
+						enum has_divisor = true;
+						enum attrib_divisor = VertexAttribUDAs[0].divisor;
+					} else {
+						enum has_divisor = false;
+					}
 
-						uint i = current_attrib_index;
-						alias MemberType = typeof(__traits(getMember, VertexType, m));
-						enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
-						enum IsNormalized = hasUDA!(__traits(getMember, VertexType, m), Normalized_);
+					static if (isArray!VertexType) {
+					
+						// handles primitive arrays
 
-						static if (isArray!MemberType) {
-							alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
-						} else {
-							alias ElementType = MemberType;
+						static if (isArray!(typeof(__traits(getMember, VDataType, VS)[0]))) {
+						
+							uint i = current_attrib_index;
+							alias ElementType = typeof(__traits(getMember, VDataType, VS)[0][0]);
+							enum ArrLen = VertexType.length;
+
+							glEnableVertexAttribArray(i);
+							glVertexAttribPointer(i,
+								VertexType.sizeof / ElementType.sizeof,
+								TypeToGL!ElementType,
+								GL_FALSE, // normalization
+								VertexType.sizeof, // stride to jump
+								cast(const(void)*)0
+							);
+							
+							static if (has_divisor) {
+								pragma(msg, "WAGH");
+								glVertexAttribDivisor(current_attrib_index, attrib_divisor);
+							}
+
+							current_attrib_index += 1;
+
 						}
 
-						glEnableVertexAttribArray(i);
-						glVertexAttribPointer(i,
-							MemberType.sizeof / ElementType.sizeof,
-							TypeToGL!ElementType,
-							IsNormalized, // normalization
-							VertexType.sizeof, // stride to jump
-							cast(const(void)*)MemberOffset
-						);
+					} else {
+					
+						// handles structures
 
-						current_attrib_index += 1;
+						foreach (m; PODMembers!VertexType) {
+
+							uint i = current_attrib_index;
+							alias MemberType = typeof(__traits(getMember, VertexType, m));
+							enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
+							enum IsNormalized = hasUDA!(__traits(getMember, VertexType, m), Normalized_);
+
+							static if (isArray!MemberType) {
+								alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
+							} else {
+								alias ElementType = MemberType;
+							}
+
+							glEnableVertexAttribArray(i);
+							glVertexAttribPointer(i,
+								MemberType.sizeof / ElementType.sizeof,
+								TypeToGL!ElementType,
+								IsNormalized, // normalization
+								VertexType.sizeof, // stride to jump
+								cast(const(void)*)MemberOffset
+							);
+							
+							static if (has_divisor) {
+								glVertexAttribDivisor(current_attrib_index, attrib_divisor);
+							}
+
+							current_attrib_index += 1;
+
+						}
 
 					}
 				}
@@ -1036,11 +1091,14 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 		}
 
 		alias MembersWithTypeProvider = MembersByUDA!(VDataType, TypeProvider_);
-		static assert(MembersWithTypeProvider.length == 1, "struct needs @TypeProvider (decides what primitive to pass to draw call)");
-		vao.draw_type_ = TypeToGL!(typeof(__traits(getMember, VDataType, MembersWithTypeProvider[0])[0]));
+		//static assert(MembersWithTypeProvider.length == 1, "struct needs @TypeProvider (decides what primitive to pass to draw call)");
+		//vao.draw_type_ = TypeToGL!(typeof(__traits(getMember, data, MembersWithTypeProvider[0])[0]));
+		
+		alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
+		vao.num_instances_ = __traits(getMember, data, MembersWithInstanceCountProvider[0])[0].length;
 
 		alias MembersWithCountProvider = MembersByUDA!(VDataType, VertexCountProvider_);
-		static assert(MembersWithCountProvider.length == 1, "struct needs @VertexCountProvider, either a function or an array!");
+		static assert(MembersWithCountProvider.length == 1, "struct needs @VertexCountProvider, either a function or an array!");		
 
 		enum Provider = MembersWithCountProvider[0];
 		static if (isArray!(typeof(__traits(getMember, VDataType, Provider)))) {
@@ -1528,22 +1586,14 @@ static:
 
 		}
 
-		// basic
-		import std.traits : hasMember;
-		static if (hasMember!(VertexArrayType, "DrawFunction")) {
-
-			static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
-				glDrawArrays(vao.type_, 0, vertex_count);
-			} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
-				//glDrawArraysInstanced(vao.type_, 0, vertex_count, 
-			} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
-				glDrawElements(vao.type_, vertex_count, vao.draw_type_, offset);
-			} else static if (VertexArrayType.DrawFunction == DrawType.DrawElementsInstanced) {
-				glDrawElementsInstanced(vao.type_, vao.num_vertices_, GL_UNSIGNED_INT, 0);
-			}
-
-		} else {
-			glDrawArrays(vao.type_, 0, vao.num_vertices_);
+		static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
+			glDrawArrays(vao.type_, offset, vertex_count);
+		} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
+			glDrawArraysInstanced(vao.type_, cast(int)offset, vertex_count, vao.num_instances_);
+		} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
+			glDrawElements(vao.type_, vertex_count, vao.draw_type_, offset);
+		} else static if (VertexArrayType.DrawFunction == DrawType.DrawElementsInstanced) {
+			glDrawElementsInstanced(vao.type_, vao.num_vertices_, vao.draw_type_, 0);
 		}
 
 	} // draw
