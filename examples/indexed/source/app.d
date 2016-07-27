@@ -57,14 +57,8 @@ struct VertexData {
 
 	@(DrawHint.StaticDraw)
 	@(BufferTarget.ElementArrayBuffer)
-	uint[] indices;
-
-	@property
-	nothrow @nogc
 	@VertexCountProvider
-	uint numVertices() {
-		return cast(uint)indices.length;
-	} // numVertices
+	uint[] indices;
 
 } // VertexData
 

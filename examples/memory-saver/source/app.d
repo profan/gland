@@ -11,13 +11,15 @@ import gland.gl;
 immutable char* vs_shader = "
 	#version 330
 
+	uniform mat4 model;
+
 	layout (location = 0) in vec2 position;
 	layout (location = 1) in vec3 colour;
 
 	out vec3 v_colour;
 
 	void main() {
-		gl_Position = vec4(position, 0.0, 1.0);
+		gl_Position = model * vec4(position, 0.0, 1.0);
 		v_colour = colour;
 	}
 ";
@@ -61,13 +63,11 @@ immutable char* tex_fs_shader = "
     }
 ";
 
-alias Mat4f = float[4][4];
-
 alias TriangleShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0),
 		AttribTuple("colour", 1)
-	]
+	], float[4][4][], "model"
 );
 
 alias TextureShader = Shader!(
@@ -77,12 +77,12 @@ alias TextureShader = Shader!(
     ], Texture*, "diffuse"
 );
 
-struct Vertex2f3f {
+struct Vertex2f2f {
 
 	float[2] position;
-	float[3] colour;
+	float[2] uv;
 
-} // Vertex2f3f
+} // Vertex2f2f
 
 struct TriangleData {
 
@@ -95,12 +95,12 @@ struct TriangleData {
 
 alias TriangleVao = VertexArrayT!(TriangleData, DrawType.DrawArrays);
 
-struct Vertex2f2f {
+struct Vertex2f3f {
 
 	float[2] position;
-	float[2] uv;
+	float[3] colour;
 
-} // Vertex2f2f
+} // Vertex2f3f
 
 struct FramebufferData {
 
@@ -112,7 +112,6 @@ struct FramebufferData {
 } // FramebufferData
 
 alias FrameVao = VertexArrayT!(FramebufferData, DrawType.DrawArrays);
-
 
 void main() {
 
@@ -179,7 +178,7 @@ void main() {
 	];
 
 	// now, upload vertices
-	auto tri_data = TriangleData(tri_vertices);
+	auto tri_data = TriangleData(tri_vertices[]);
 	auto vao = TriangleVao.upload(tri_data, DrawPrimitive.Triangles);
 
 	// declare vertex data
@@ -194,10 +193,16 @@ void main() {
 	];
 
 	// also, rect vertices
-	auto frame_data = FramebufferData(rect_vertices);
+	auto frame_data = FramebufferData(rect_vertices[]);
 	auto rect_vao = FrameVao.upload(frame_data, DrawPrimitive.Triangles);
 
+	// VSYNCAN
+	SDL_GL_SetSwapInterval(1);
+	ulong current_tick = 0;
+
 	while (window.isAlive) {
+
+		current_tick += 1;
 
 		// handle window events
 		window.handleEvents();
@@ -207,14 +212,24 @@ void main() {
 			window.quit();
 		}
 
+		// check if it's time to pause
+		if (window.isKeyDown(SDL_SCANCODE_SPACE)) {
+			continue;
+		}
+
 		// default state, holds all OpenGL state params like blend state etc to be use for given draw call
 		DrawParams params = {};
 
+		// transformu
+		static auto transform = Transform(Vec2f(0.0f, 0.0f));
+		transform.rotation.z += 0.01;
+
 		// render to texture, also clear with ze blau
-		Renderer.draw(frame_buffer, triangle_shader, vao, params);
+		Renderer.draw(frame_buffer, triangle_shader, vao, params, [cast(float[4][4])transform.transform.ptr[0..16]]);
 
 		// now render given texture, woo!
 		Renderer.draw(texture_shader, rect_vao, params, &framebuffer_texture);
+
 
 		window.present();
 

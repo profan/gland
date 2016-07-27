@@ -4,7 +4,8 @@
 	"copyright": "Copyright © 2016, profan",
 	"authors": ["profan"],
 	"dependencies": {
-		"derelict-sdl2": "~>2.0.0"
+		"derelict-sdl2": "~>2.0.0",
+		"gfm:math": "~>6.1.1"
 	},
 	"buildTypes": {
 		"debug": {
