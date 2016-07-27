@@ -2,8 +2,17 @@ module gland.util;
 
 import std.algorithm : max, swap;
 import std.math : sqrt;
+import gfm.math;
 
 import gland.win;
+
+//OpenGL maths related
+alias Vec2i = Vector!(int, 2);
+alias Vec2f = Vector!(float, 2);
+alias Vec3f = Vector!(float, 3);
+alias Vec4f = Vector!(float, 4);
+alias Mat3f = Matrix!(float, 3, 3);
+alias Mat4f = Matrix!(float, 4, 4);
 
 pure @nogc nothrow
 float distance2D(float x1, float y1, float x2, float y2) {
@@ -11,7 +20,7 @@ float distance2D(float x1, float y1, float x2, float y2) {
 } // distance2D
 
 T normalize(T)(T val, T min, T max, T val_max) {
-        return (min + val) / (val_max / (max - min));
+	return (min + val) / (val_max / (max - min));
 } //normalize
 
 /**
@@ -74,7 +83,8 @@ T transpose(T)(ref T matrix) {
 
 } // transpose
 
-float[4][4] orthographic(float left, float right, float bottom, float top, float near, float far) pure {
+nothrow pure @nogc
+float[4][4] orthographic(float left, float right, float bottom, float top, float near, float far) {
 
     float dx = right - left;
     float dy = top - bottom;
@@ -92,3 +102,88 @@ float[4][4] orthographic(float left, float right, float bottom, float top, float
     ];
 
 } // orthographic
+
+/**
+ * Represents a position, rotation and scale in space, with an optional origin modifier for rotations.
+*/
+struct Transform {
+
+	Vec2f position;
+	Vec3f rotation;
+	Vec2f scale;
+
+	Vec3f origin;
+
+	this(in Vec2f pos, in Vec3f rotation = Vec3f(0.0f, 0.0f, 0.0f), in Vec2f scale = Vec2f(1.0f, 1.0f)) nothrow @nogc {
+		this.position = pos;
+		this.rotation = rotation;
+		this.scale = scale;
+		this.origin = Vec3f(0.0f, 0.0f, 0.0f);
+	} //this
+
+	@property Mat4f transform() const nothrow @nogc {
+
+		Mat4f originMatrix = Mat4f.translation(origin);
+		Mat4f posMatrix = Mat4f.translation(Vec3f(position, 0.0f) - origin);
+
+		Mat4f rotXMatrix = Mat4f.rotation(rotation.x, Vec3f(1, 0, 0));
+		Mat4f rotYMatrix = Mat4f.rotation(rotation.y, Vec3f(0, 1, 0));
+		Mat4f rotZMatrix = Mat4f.rotation(rotation.z, Vec3f(0, 0, 1));
+		Mat4f scaleMatrix = Mat4f.scaling(Vec3f(scale, 1.0f));
+
+		Mat4f rotMatrix = rotXMatrix * rotYMatrix * rotZMatrix;
+
+		return posMatrix * rotMatrix * originMatrix * scaleMatrix;
+
+	} //transform
+
+} //Transform
+
+struct Obj {
+
+	import std.conv;
+	import std.stdio;
+	import std.range;
+	import std.algorithm;
+
+	private {
+
+		float[3][] vertices_;
+		int[][] faces_;
+
+	}
+
+	static Obj load(string filename) {
+
+		Obj new_obj;
+
+		auto f = File(filename, "r");
+
+		foreach (line; f.byLine) with (new_obj) {
+			if (line.startsWith("v ")) {
+				float[3] v;
+				v = line[2..$].splitter.map!(to!float).array;
+				vertices_ ~= v;
+			} else if (line.startsWith("f ")) {
+				int[] face;
+				int tmp;
+				foreach (pol; line[2..$].splitter) {
+					tmp = to!int(pol.splitter("/").array[0]) - 1;
+					face ~= tmp;
+				}
+				faces_ ~= face;
+			}
+		}
+
+		return new_obj;
+
+	} // load
+
+	@property {
+
+		auto faces() { return faces_; }
+		auto verts() { return vertices_; }
+
+	}
+
+} // Obj

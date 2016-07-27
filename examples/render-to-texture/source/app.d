@@ -63,28 +63,19 @@ immutable char* tex_fs_shader = "
 
 alias Mat4f = float[4][4];
 
-alias TriangleShader = Shader!([
-	ShaderTuple(ShaderType.VertexShader, [
+alias TriangleShader = Shader!(
+	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0),
 		AttribTuple("colour", 1)
-	]),
-	ShaderTuple(ShaderType.FragmentShader, [])
-]);
+	]
+);
 
-alias TextureShader = Shader!([
-    ShaderTuple(ShaderType.VertexShader, [
+alias TextureShader = Shader!(
+	[ShaderType.VertexShader, ShaderType.FragmentShader], [
         AttribTuple("position", 0),
         AttribTuple("uv", 1)
-    ]),
-    ShaderTuple(ShaderType.FragmentShader, [])
-], Texture*, "diffuse");
-
-struct Vertex2f2f {
-
-	float[2] position;
-	float[2] uv;
-
-} // Vertex2f2f
+    ], Texture*, "diffuse"
+);
 
 struct Vertex2f3f {
 
@@ -93,6 +84,36 @@ struct Vertex2f3f {
 
 } // Vertex2f3f
 
+struct TriangleData {
+
+	@(DrawHint.StaticDraw)
+	@(BufferTarget.ArrayBuffer)
+	@VertexCountProvider
+	Vertex2f3f[] vertices;
+
+} // TriangleData
+
+alias TriangleVao = VertexArrayT!(TriangleData, DrawType.DrawArrays);
+
+struct Vertex2f2f {
+
+	float[2] position;
+	float[2] uv;
+
+} // Vertex2f2f
+
+struct FramebufferData {
+
+	@(DrawHint.StaticDraw)
+	@(BufferTarget.ArrayBuffer)
+	@VertexCountProvider
+	Vertex2f2f[] vertices;
+
+} // FramebufferData
+
+alias FrameVao = VertexArrayT!(FramebufferData, DrawType.DrawArrays);
+
+
 void main() {
 
 	// load libs
@@ -100,8 +121,8 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
-	Renderer.viewport_width_ = 640;
-	Renderer.viewport_height_ = 480;
+	Renderer.viewport_width_ = window.width;
+	Renderer.viewport_height_ = window.height;
 
 	final switch (result) with (Window.Error) {
 
@@ -158,7 +179,8 @@ void main() {
 	];
 
 	// now, upload vertices
-	auto vao = tri_vertices.upload(DrawHint.StaticDraw, DrawPrimitive.Triangles);
+	auto tri_data = TriangleData(tri_vertices);
+	auto vao = TriangleVao.upload(tri_data, DrawPrimitive.Triangles);
 
 	// declare vertex data
 	Vertex2f2f[6] rect_vertices = [
@@ -172,7 +194,8 @@ void main() {
 	];
 
 	// also, rect vertices
-	auto rect_vao = rect_vertices.upload(DrawHint.StaticDraw, DrawPrimitive.Triangles);
+	auto frame_data = FramebufferData(rect_vertices);
+	auto rect_vao = FrameVao.upload(frame_data, DrawPrimitive.Triangles);
 
 	while (window.isAlive) {
 
@@ -188,7 +211,6 @@ void main() {
 		DrawParams params = {};
 
 		// render to texture, also clear with ze blau
-		Renderer.clearColour(frame_buffer, 0x428bca);
 		Renderer.draw(frame_buffer, triangle_shader, vao, params);
 
 		// now render given texture, woo!

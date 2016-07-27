@@ -35,13 +35,12 @@ immutable char* fs_shader = "
 
 alias Mat4f = float[4][4];
 
-alias TriangleShader = Shader!([
-	ShaderTuple(ShaderType.VertexShader, [
+alias TriangleShader = Shader!(
+	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0),
 		AttribTuple("colour", 1)
-	]),
-	ShaderTuple(ShaderType.FragmentShader, [])
-]);
+	]
+);
 
 struct Vertex2f3f {
 
@@ -49,6 +48,17 @@ struct Vertex2f3f {
 	float[3] colour;
 
 } // Vertex2f3f
+
+struct VertexData {
+
+	@(DrawHint.StaticDraw)
+	@(BufferTarget.ArrayBuffer)
+	@VertexCountProvider
+	Vertex2f3f[] vertices;
+
+} // VertexData
+
+alias TriangleVao = VertexArrayT!(VertexData, DrawType.DrawArrays);
 
 void main() {
 
@@ -89,8 +99,10 @@ void main() {
 		Vertex2f3f([0.5f, -0.5f], [0.0f, 0.0f, 1.0f]) // triangle right
 	];
 
+	auto vertex_data = VertexData(vertices);
+
 	// now, upload vertices
-	auto vao = vertices.upload(DrawHint.StaticDraw, DrawPrimitive.Triangles);
+	auto vao = TriangleVao.upload(vertex_data, DrawPrimitive.Triangles);
 
 	while (window.isAlive) {
 

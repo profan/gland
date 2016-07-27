@@ -167,7 +167,7 @@ struct Window {
 
 			if (severity == GL_DEBUG_SEVERITY_HIGH) {
 				printf("Aborting...\n");
-				exit(-1);
+			//	exit(-1);
 			}
 
 		} //openGLCallbackFunction

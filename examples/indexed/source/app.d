@@ -35,13 +35,12 @@ immutable char* fs_shader = "
 
 alias Mat4f = float[4][4];
 
-alias TriangleShader = Shader!([
-	ShaderTuple(ShaderType.VertexShader, [
+alias TriangleShader = Shader!(
+	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0),
 		AttribTuple("colour", 1)
-	]),
-	ShaderTuple(ShaderType.FragmentShader, [])
-]);
+	]
+);
 
 struct Vertex2f3f {
 
@@ -49,6 +48,22 @@ struct Vertex2f3f {
 	float[3] colour;
 
 } // Vertex2f3f
+
+struct VertexData {
+
+	@(DrawHint.StaticDraw)
+	@(BufferTarget.ArrayBuffer)
+	Vertex2f3f[] vertices;
+
+	@(DrawHint.StaticDraw)
+	@(BufferTarget.ElementArrayBuffer)
+	@VertexCountProvider
+	uint[] indices;
+
+} // VertexData
+
+// VAO TYPE YES
+alias ElementsVAO = VertexArrayT!(VertexData, DrawType.DrawElements);
 
 void main() {
 
@@ -82,21 +97,25 @@ void main() {
 		return; // exit now
 	}
 
-	// declare vertex data
-	Vertex2f3f[6] vertices = [
 
+	// declare vbo data
+	Vertex2f3f[4] vertices = [
 		Vertex2f3f([-0.5f, -0.5f], [0.0f, 0.0f, 0.0f]), // top left
 		Vertex2f3f([0.5f, -0.5f], [1.0f, 0.0f, 0.0f]), // top right
 		Vertex2f3f([0.5f, 0.5f], [1.0f, 1.0f, 0.0f]), // bottom right
-
-		Vertex2f3f([-0.5f, -0.5f], [0.0f, 0.0f, 0.0f]), // top left
 		Vertex2f3f([-0.5f, 0.5f], [0.0f, 1.0f, 0.0f]), // bottom left
-		Vertex2f3f([0.5f, 0.5f], [1.0f, 1.0f, 0.0f]) // bottom right
-
 	];
 
-	// now, upload vertices
-	auto vao = vertices.upload(DrawHint.StaticDraw, DrawPrimitive.Triangles);
+	// declare ebo data
+	uint[6] indices = [
+		0, 1, 2,
+		2, 3, 0
+	];
+
+	auto vertex_data = VertexData(vertices, indices);
+
+	// upload vertices and indices, get back vao to render with
+	auto vao = ElementsVAO.upload(vertex_data, DrawPrimitive.Triangles);
 
 	while (window.isAlive) {
 

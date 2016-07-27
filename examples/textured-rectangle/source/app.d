@@ -40,13 +40,11 @@ immutable char* fs_shader = "
 
 alias Mat4f = float[4][4];
 
-alias TextureShader = Shader!([
-	ShaderTuple(ShaderType.VertexShader, [
+alias TextureShader = Shader!(
+	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0),
 		AttribTuple("uv", 1)
-	]),
-	ShaderTuple(ShaderType.FragmentShader, [])
-], float[2], "offset", Texture*, "diffuse");
+	], float[2], "offset", Texture*, "diffuse");
 
 struct Vertex2f2f {
 
@@ -54,6 +52,17 @@ struct Vertex2f2f {
 	float[2] uv;
 
 } // Vertex2f2f
+
+struct VertexData {
+
+	@VertexCountProvider
+	@(BufferTarget.ArrayBuffer)
+	@(DrawHint.StaticDraw)
+	Vertex2f2f[] vertices;
+
+} // VertexData
+
+alias TextureVao = VertexArrayT!(VertexData, DrawType.DrawArrays);
 
 void main() {
 
@@ -127,7 +136,8 @@ void main() {
 	];
 
 	// now, upload vertices
-	auto vao = vertices.upload(DrawHint.StaticDraw, DrawPrimitive.Triangles);
+	auto vertex_data = VertexData(vertices);
+	auto vao = TextureVao.upload(vertex_data, DrawPrimitive.Triangles);
 
 	while (window.isAlive) {
 

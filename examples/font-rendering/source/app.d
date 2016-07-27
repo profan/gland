@@ -12,8 +12,9 @@ import gland.gl;
 immutable char* vs_shader = "
 	#version 330 core
 
-	layout (location = 0) in vec4 coord;
 	uniform mat4 projection;
+
+	layout (location = 0) in vec4 coord;
 
 	out vec2 tex_coord;
 
@@ -37,15 +38,29 @@ immutable char* fs_shader = "
 ";
 
 alias Mat4f = float[4][4];
-
-alias TextShader = Shader!([
-	ShaderTuple(ShaderType.VertexShader, [
-		AttribTuple("coord", 0)
-	]),
-	ShaderTuple(ShaderType.FragmentShader, [])
-], Mat4f[], "projection", float[4], "colour", Texture*, "tex");
-
 alias Vec4f = float[4];
+
+struct Vertex4f {
+	Vec4f coord;
+	alias coord this;
+} // Vertex4f
+
+alias TextShader = Shader!(
+	[ShaderType.VertexShader, ShaderType.FragmentShader], [
+		AttribTuple("coord", 0)
+	], Mat4f[], "projection", float[4], "colour", Texture*, "tex"
+);
+
+struct TextData {
+
+	@(DrawHint.StaticDraw)
+	@(BufferTarget.ArrayBuffer)
+	@VertexCountProvider
+	Vertex4f[] vertices;
+
+} // TextData
+
+alias TextVao = VertexArrayT!(TextData, DrawType.DrawArrays);
 
 struct FontAtlas {
 
@@ -68,11 +83,6 @@ struct FontAtlas {
 
 	} //CharacterInfo
 
-	struct Vertex4f {
-		Vec4f coord;
-		alias coord this;
-	} // Vertex4f
-
 	enum Error {
 		Success = "FontAtlas successfully created.",
 		CouldNotOpenFont = "FreeType could not open font!"
@@ -83,7 +93,7 @@ struct FontAtlas {
 		// FT LIB, this should probably go elsewhere, for now it is here
 		static FT_Library ft_;
 
-		VertexArray!Vertex4f vertices_;
+		TextVao vertices_;
 		TextShader shader_;
 		Texture texture_;
 
@@ -212,8 +222,9 @@ struct FontAtlas {
 		import std.algorithm.mutation : move;
 		move(shader, atlas.shader_);
 
-		Vertex4f[0] verts;
-		atlas.vertices_ = upload(verts[], DrawHint.DynamicDraw, DrawPrimitive.Triangles);
+		TextData data;
+		auto vao = TextVao.upload(data, DrawPrimitive.Triangles);
+		move(vao, atlas.vertices_);
 
 		return Error.Success;
 
@@ -273,7 +284,8 @@ struct FontAtlas {
 		};
 
 		// passes new vertex data to the vertex buffer
-		vertices_.update!Vertex4f(coords, DrawHint.DynamicDraw);
+		auto new_coords = TextData(coords);
+		TextVao.update(vertices_, new_coords, DrawPrimitive.Triangles);
 		
 		// do the drawings
 		Renderer.draw(shader_, vertices_, params, projection_data, to!GLColour(colour), &texture_);

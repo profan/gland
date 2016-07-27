@@ -98,8 +98,8 @@ struct Normalized_ {
 
 } // Normalized
 
-@property normalized(bool normalized) {
-	return Normalized_(normalized);
+@property Normalized() {
+	return Normalized_();
 } // normalized
 
 template TypeToGL(T) {
@@ -310,8 +310,7 @@ GLuint createShaderProgram(in GLuint[] shader_ids, in AttribTuple[] attribs) {
 } //createShaderProgram
 
 alias AttribTuple = Tuple!(string, "identifier", int, "offset");
-alias ShaderTuple = Tuple!(ShaderType, "type", AttribTuple[], "attribs");
-struct Shader(ShaderTuple[] shaders, Uniforms...) {
+struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, Uniforms...) {
 
 	import std.string : format;
 	alias Bindings = Uniforms;
@@ -328,7 +327,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 	
 	} // Error
 
-	static string createFunction(ShaderTuple[] shaders) {
+	static string createFunction(ShaderType[] shaders) {
 
 		import std.algorithm : map, joiner;
 		import std.range : enumerate;
@@ -344,7 +343,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 
 	} // createFunction
 
-	static string createCompiler(ShaderTuple[] shaders) {
+	static string createCompiler(ShaderType[] shaders) {
 
 		import std.algorithm : map, joiner;
 		import std.range : enumerate;
@@ -355,7 +354,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 
 		foreach (i, shader; shaders) {
 		buffer ~= q{
-			GLuint shader_%d = compileShader(source_%d, ShaderType.%s);}.format(i, i, shader.type);
+			GLuint shader_%d = compileShader(source_%d, ShaderType.%s);}.format(i, i, shader);
 		}
 
 		buffer ~= q{
@@ -363,7 +362,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 
 		// resolve uniform locations
 		buffer ~= q{
-			new_shader.program_ = createShaderProgram(shader_ids, shaders[0].attribs);
+			new_shader.program_ = createShaderProgram(shader_ids, attributes);
 
 			foreach (i, uniform; Uniforms) {
 
@@ -403,7 +402,7 @@ struct Shader(ShaderTuple[] shaders, Uniforms...) {
 	} // createCompiler
 
 	/* generator */
-	mixin(createFunction(shaders));
+	mixin(createFunction(shader_types));
 
 	~this() {
 
@@ -429,6 +428,7 @@ enum InternalTextureFormat {
 
 	/* RGBA */
 
+	RGBA = GL_RGBA,
 	RGBA8 = GL_RGBA8,
 	RGBA8UI = GL_RGBA8UI,
 	RGBA8_SNORM = GL_RGBA8_SNORM,
@@ -445,6 +445,7 @@ enum InternalTextureFormat {
 
 	/* RGB */
 
+	RGB = GL_RGB,
 	RGB8 = GL_RGB8,
 	RGB8UI = GL_RGB8UI,
 	RGB8_SNORM = GL_RGB8_SNORM,
@@ -581,6 +582,11 @@ struct TextureParams {
 
 } // TextureParams
 
+enum IsOpaque : bool {
+	Yes = true,
+	No = false
+} // IsOpaque
+
 struct Texture {
 
 	private {
@@ -616,6 +622,12 @@ struct Texture {
 
 	static Error create(DataType)(ref Texture texture, DataType[] texture_data, int width, int height, TextureParams params) {
 
+		return Texture.create(texture, texture_data.ptr, width, height, params);
+
+	} // create
+
+	static Error create(DataType)(ref Texture texture, DataType* texture_data, int width, int height, TextureParams params) {
+
 		texture.width_ = width;
 		texture.height_ = height;
 		
@@ -625,7 +637,7 @@ struct Texture {
 
 		// begin creation
 		glGenTextures(1, &texture.handle_);
-		Renderer.bindTexture(texture, 0);
+		Renderer.bindTexture(texture.handle, 0);
 
 		// set texture parameters in currently bound texture, controls texture wrapping (or GL_CLAMP?)
 		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_S, params.wrapping);
@@ -649,12 +661,19 @@ struct Texture {
 			0,
 			texture.pixel_format_,
 			data_type,
-			cast(void*)texture_data.ptr
+			cast(void*)texture_data
 		);
 
 		return Error.Success;
 
 	} // create
+
+	@nogc nothrow
+	static OpaqueTexture fromId(GLuint id) {
+
+		return OpaqueTexture(id);
+
+	} // fromId
 
 	~this() {
 
@@ -670,6 +689,19 @@ struct Texture {
 
 
 } // Texture
+
+struct OpaqueTexture {
+
+	private {
+		GLuint handle_;
+	}
+
+	@nogc nothrow
+	GLuint handle() {
+		return handle_;
+	} // handle
+
+} // OpaqueTexture
 
 struct SimpleFramebuffer {
 
@@ -837,6 +869,193 @@ struct PixelBuffer {
 
 } // PixelBuffer
 
+struct VertexCountProvider_ {
+} // VertexCountProvider
+
+@property
+auto VertexCountProvider() {
+	return VertexCountProvider_();
+} // VertexCountProvider
+
+struct OffsetProvider_ {
+} // OffsetProvider
+
+@property 
+auto OffsetProvider() {
+	return OffsetProvider_();
+} // OffsetProvider
+
+template MembersByUDA(T, alias attribute) {
+
+	import std.meta : Filter;
+	import std.traits : hasUDA;
+
+	template HasSpecificUDA(string field) {
+		static if (field == "this") {
+			enum HasSpecificUDA = false;
+		} else {
+			enum HasSpecificUDA = hasUDA!(__traits(getMember, T, field), attribute);
+		}
+	}
+
+	alias MembersByUDA = Filter!(HasSpecificUDA, __traits(allMembers, T));
+
+} // MembersByUDA
+
+struct VertexArrayT(VDataType, DrawType draw_function) {
+
+	import std.meta : AliasSeq;
+
+	alias Statics = MembersByUDA!(VDataType, DrawHint.StaticDraw);
+	alias Dynamics = MembersByUDA!(VDataType, DrawHint.DynamicDraw);
+	alias Streams = MembersByUDA!(VDataType, DrawHint.StreamDraw);
+
+	alias All = AliasSeq!(Statics, Dynamics, Streams);
+
+	alias DrawFunction = draw_function;
+	enum VboCount = All.length;
+	static assert(is(typeof(DrawFunction) : DrawType), "expected last argument in template arguments to be of type DrawType");
+
+	private {
+
+		GLuint handle_;
+		GLuint[VboCount] vbos_;
+		DrawPrimitive type_;
+		uint num_vertices_;
+
+		GLenum draw_type_;
+
+	}
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
+
+	alias UdaTuple = Tuple!(DrawHint, "draw_hint", BufferTarget, "buffer_target", bool, "normalized");
+
+	static UdaTuple CollectUDAs(alias m)() {
+
+		UdaTuple uda_tuple;
+
+		foreach (uda; __traits(getAttributes, m)) {
+			static if (is(typeof(uda) == DrawHint)) {
+				uda_tuple.draw_hint = uda;
+			} else static if (is(typeof(uda) == BufferTarget)) {
+				uda_tuple.buffer_target = uda;
+			}
+		}
+
+		return uda_tuple;
+
+	} // CollectUDAs
+
+	nothrow @nogc
+	private static auto uploadData(bool is_new)(ref typeof(this) vao, ref VDataType data, DrawPrimitive type) {
+
+		import std.traits : isArray, isCallable, hasUDA, FieldNameTuple, getSymbolsByUDA, getUDAs;
+
+		foreach (v_i, VS; All) {
+
+			alias VT = typeof(__traits(getMember, VDataType, VS));
+			enum uda_tuple = CollectUDAs!(__traits(getMember, VDataType, VS))();
+
+			static if (isArray!VT) {
+
+				alias VertexType = typeof(__traits(getMember, VDataType, VS)[0]);
+
+				Renderer.bindBuffer(uda_tuple.buffer_target, vao.vbos_[v_i]);
+				glBufferData(uda_tuple.buffer_target,
+					VertexType.sizeof * __traits(getMember, data, VS).length,
+					__traits(getMember, data, VS).ptr,
+					uda_tuple.draw_hint
+				);
+
+				static if (uda_tuple.buffer_target == BufferTarget.ElementArrayBuffer) {
+					vao.draw_type_ = TypeToGL!VertexType;
+				}
+
+				static if (!is_new) continue;
+				else static if (uda_tuple.buffer_target != BufferTarget.ElementArrayBuffer) {
+					foreach (i, m; PODMembers!VertexType) {
+						alias MemberType = typeof(__traits(getMember, VertexType, m));
+						enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
+
+						enum IsNormalized = hasUDA!(__traits(getMember, VertexType, m), Normalized_);
+
+						static if (isArray!MemberType) {
+							alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
+						} else {
+							alias ElementType = MemberType;
+						}
+
+						glEnableVertexAttribArray(i);
+						glVertexAttribPointer(i,
+							MemberType.sizeof / ElementType.sizeof,
+							TypeToGL!ElementType,
+							IsNormalized, // normalization
+							VertexType.sizeof, // stride to jump
+							cast(const(void)*)MemberOffset
+						);
+					}
+				}
+
+			}
+
+		}
+
+		alias MembersWithCountProvider = MembersByUDA!(VDataType, VertexCountProvider_);
+		static assert(MembersWithCountProvider.length == 1, "struct needs @VertexCountProvider, either a function or an array!");
+
+		enum Provider = MembersWithCountProvider[0];
+		static if (isArray!(typeof(__traits(getMember, VDataType, Provider)))) {
+			vao.num_vertices_ = cast(uint)__traits(getMember, data, Provider).length;
+		} else static if (isCallable!(__traits(getMember, VDataType, Provider))) {
+			vao.num_vertices_ = __traits(getMember, data, Provider)();
+		}
+
+		// set ze draw primitive
+		vao.type_ = type;
+
+	} // uploadData
+
+	nothrow @nogc
+	static auto update(ref typeof(this) vao, ref VDataType data, DrawPrimitive type) {
+
+		Renderer.bindVertexArray(vao);
+		uploadData!false(vao, data, type);
+
+	} // update
+
+	nothrow @nogc
+	static auto upload(ref VDataType data, DrawPrimitive type) {
+
+		typeof(this) vao;
+
+		glGenVertexArrays(1, vao.handle);
+		Renderer.bindVertexArray(vao);
+
+		// GENERATE ALL THE VBOS
+		glGenBuffers(VboCount, vao.vbos_.ptr);
+
+		// do ze uploadsings
+		uploadData!true(vao, data, type);
+
+		return vao;
+
+	} // upload
+
+	~this() {
+
+		glDeleteVertexArrays(1, &handle_);
+
+	} // ~this
+
+	@property
+	GLuint* handle() {
+		return &handle_;
+	} // handle
+
+} // VertexArrayT
+
 struct VertexArray(VT) {
 
 	private {
@@ -905,7 +1124,7 @@ template PODMembers(T) {
 nothrow @nogc
 void update(ref Texture texture, int x_offset, int y_offset, int width, int height, in void* bytes) {
 
-	Renderer.bindTexture(texture, 0);
+	Renderer.bindTexture(texture.handle, 0);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, x_offset, y_offset, width, height, texture.pixel_format_, GL_UNSIGNED_BYTE, bytes);
 
 } // update
@@ -937,46 +1156,27 @@ void update(VertexType)(ref VertexArray!VertexType vao, in VertexType[] vertices
 
 } // update
 
-nothrow @nogc
-auto upload(VertexType)(in VertexType[] vertices, DrawHint draw_hint, DrawPrimitive prim_type = DrawPrimitive.Triangles) {
+enum DrawType {
 
-	VertexArray!VertexType vao;
+	DrawArrays,
+	DrawArraysInstanced,
 
-	vao.type_ = prim_type;
-	vao.num_vertices_ = cast(uint)vertices.length;
+	DrawElements,
+	DrawElementsInstanced
 
-	glGenVertexArrays(1, vao.handle);
-	Renderer.bindVertexArray(vao);
+} // DrawType
 
-	glGenBuffers(1, &vao.vbo_);
-	Renderer.bindBuffer(BufferTarget.ArrayBuffer, vao.vbo_);
-	glBufferData(GL_ARRAY_BUFFER, vertices.length * vertices[0].sizeof, vertices.ptr, draw_hint);
+struct Device {
 
-	foreach (i, m; PODMembers!VertexType) {
+	int width_;
+	int height_;
 
-		alias MemberType = typeof(__traits(getMember, VertexType, m));
-		enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
-		alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
-
-		glEnableVertexAttribArray(i);
-		glVertexAttribPointer(i,
-			MemberType.sizeof / ElementType.sizeof,
-			TypeToGL!ElementType,
-			GL_FALSE, // normalization
-			vertices[0].sizeof, // stride to jump
-			cast(const(void)*)MemberOffset
-		);
-
+	@property {
+		int width() { return width_; }
+		int height() { return height_; }
 	}
 
-	return vao;
-
-} // upload
-
-nothrow @nogc
-void draw(VertexType)(ref VertexArray!VertexType vao, DrawParams params) {
-
-} // draw
+} // Device
 
 mixin template RendererStateVars() {
 
@@ -1000,6 +1200,9 @@ mixin template RendererStateVars() {
 
 	//GL_BLEND
 	bool blend_test;
+
+	//GL_BLEND_EQUATION
+	BlendEquation blend_eq;
 
 	//GL_BLEND_SRC
 	BlendFunc blend_src;
@@ -1092,7 +1295,7 @@ static:
 
 		auto colour = to!GLColour(rgb);
 		glClearColor(colour[0], colour[1], colour[2], colour[3]);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	} // clearColour
 
@@ -1100,7 +1303,7 @@ static:
 	void clearColour(GLclampf r, GLclampf g, GLclampf b, GLclampf a = 255) {
 
 		glClearColor(r, g, b, a);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	} // clearColour
 
@@ -1129,6 +1332,11 @@ static:
 
 	nothrow @nogc
 	void draw(ShaderType, VertexArrayType, Args...)(ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
+		draw_with_offset(shader, vao, params, cast(uint)vao.num_vertices_, cast(ushort*)0, args);
+	} // draw
+
+	nothrow @nogc
+	void draw_with_offset(ShaderType, VertexArrayType, Args...)(ref ShaderType shader, ref VertexArrayType vao, DrawParams params, uint vertex_count, ushort* offset, Args args) {
 
 		import std.string : format;
 
@@ -1147,6 +1355,7 @@ static:
 
 		Renderer.bindVertexArray(vao);
 		Renderer.useProgram(shader.handle);
+		uint current_texture = 0;
 
 		foreach (i, T; Args) with (shader) {
 
@@ -1236,10 +1445,10 @@ static:
 			 * Textures
 			*/
 
-			} else static if (is (T : Texture*)) {
+			} else static if (is (T : Texture*) || is(T : OpaqueTexture*)) {
 
 				// currently just a single bind, think about this later
-				Renderer.bindTexture(*args[i], 0);
+				Renderer.bindTexture(args[i].handle, current_texture++);
 
 			} else static if (is (T : Texture*[])) {
 
@@ -1263,15 +1472,40 @@ static:
 		setState(GL_STENCIL_TEST, params.state.stencil_test);
 		setState(GL_SCISSOR_TEST, params.state.scissor_test);
 
+		if (scissor_test) {
+			scissor_box = params.state.scissor_box;
+			glScissor(scissor_box[0], scissor_box[1], scissor_box[2], scissor_box[3]);
+		}
+
 		// blendaroni, TODO check if already set
-		if (blend_src != params.blend_src || blend_dst != params.blend_dst) {
+		if (blend_test && (blend_eq != params.blend_eq || blend_src != params.blend_src || blend_dst != params.blend_dst)) {
+
+			glBlendEquation(params.blend_eq);
 			glBlendFunc(params.blend_src, params.blend_dst);
+
 			blend_src = params.blend_src;
 			blend_dst = params.blend_dst;
+			blend_eq = params.blend_eq;
+
 		}
 
 		// basic
-		glDrawArrays(vao.type_, 0, vao.num_vertices_);
+		import std.traits : hasMember;
+		static if (hasMember!(VertexArrayType, "DrawFunction")) {
+
+			static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
+				glDrawArrays(vao.type_, 0, vertex_count);
+			} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
+				//glDrawArraysInstanced(vao.type_, 0, vertex_count, 
+			} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
+				glDrawElements(vao.type_, vertex_count, vao.draw_type_, offset);
+			} else static if (VertexArrayType.DrawFunction == DrawType.DrawElementsInstanced) {
+				glDrawElementsInstanced(vao.type_, vao.num_vertices_, GL_UNSIGNED_INT, 0);
+			}
+
+		} else {
+			glDrawArrays(vao.type_, 0, vao.num_vertices_);
+		}
 
 	} // draw
 
@@ -1389,18 +1623,18 @@ private:
 	} // isAnyBound
 	
 	nothrow @nogc
-	void bindTexture(ref Texture texture, uint unit) {
+	void bindTexture(GLuint texture_handle, uint unit) {
 	
-		if (texture_binding_2d[unit] != texture.handle) {
+		if (texture_binding_2d[unit] != texture_handle) {
 			glActiveTexture(GL_TEXTURE0 + unit);
-			glBindTexture(GL_TEXTURE_2D, texture.handle);
-			texture_binding_2d[unit] = texture.handle;
+			glBindTexture(GL_TEXTURE_2D, texture_handle);
+			texture_binding_2d[unit] = texture_handle;
 		}
 	
 	} // bindTexture
 
 	nothrow @nogc
-	bool bindVertexArray(VertexType)(ref VertexArray!VertexType vao) {
+	bool bindVertexArray(VertexArrayType)(ref VertexArrayType vao) {
 
 		if (vertex_array_buffer_binding == *vao.handle) {
 			return false;
