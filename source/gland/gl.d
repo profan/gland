@@ -1095,7 +1095,7 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 		//vao.draw_type_ = TypeToGL!(typeof(__traits(getMember, data, MembersWithTypeProvider[0])[0]));
 		
 		alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
-		vao.num_instances_ = __traits(getMember, data, MembersWithInstanceCountProvider[0])[0].length;
+		vao.num_instances_ = __traits(getMember, data, MembersWithInstanceCountProvider[0]).length;
 
 		alias MembersWithCountProvider = MembersByUDA!(VDataType, VertexCountProvider_);
 		static assert(MembersWithCountProvider.length == 1, "struct needs @VertexCountProvider, either a function or an array!");		

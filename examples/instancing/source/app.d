@@ -51,6 +51,7 @@ struct Vertex2f3f {
 
 } // Vertex2f3f
 
+@(DrawType.DrawArraysInstanced)
 struct VertexData {
 
 	@(DrawHint.StaticDraw)
@@ -108,7 +109,7 @@ void main() {
 	];
 	
 	float[2][4] instances = [
-		[0.25f, 0.25f], [0.5f, 0.5f], [0.75f, 0.75f], [1.0f, 1.0f],
+		[0.05f, 0.05f], [0.15f, 0.15f], [0.25f, 0.25f], [0.35f, 0.35f],
 	];
 	
 	// package data
