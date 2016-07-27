@@ -103,14 +103,15 @@ void main() {
 
 	// declare static vertex data
 	Vertex2f3f[3] vertices = [
-		Vertex2f3f([0.0f, 0.5f], [1.0f, 0.0f, 0.0f]), // triangle top
-		Vertex2f3f([-0.5f, -0.5f], [0.0f, 1.0f, 0.0f]), // triangle left
-		Vertex2f3f([0.5f, -0.5f], [0.0f, 0.0f, 1.0f]) // triangle right
+		Vertex2f3f([0.0f, 0.25f], [1.0f, 0.0f, 0.0f]), // triangle top
+		Vertex2f3f([-0.25f, -0.25f], [0.0f, 1.0f, 0.0f]), // triangle left
+		Vertex2f3f([0.25f, -0.25f], [0.0f, 0.0f, 1.0f]) // triangle right
 	];
 	
-	float[2][4] instances = [
-		[0.05f, 0.05f], [0.15f, 0.15f], [0.25f, 0.25f], [0.35f, 0.35f],
-	];
+	float[2][40] instances;
+	foreach (i, ref e; instances) {
+		e = [-0.75f + (0.05f * i), -0.75f + (0.05f * i)];
+	}
 	
 	// package data
 	auto data = VertexData(vertices, instances);
