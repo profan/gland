@@ -928,7 +928,7 @@ template MembersByUDA(T, alias attribute) {
 struct VertexArrayT(VDataType, DrawType draw_function) {
 
 	import std.meta : AliasSeq;
-	import std.traits : isInstanceOf;
+	import std.traits : isInstanceOf, getUDAs;
 
 	alias Statics = MembersByUDA!(VDataType, DrawHint.StaticDraw);
 	alias Dynamics = MembersByUDA!(VDataType, DrawHint.DynamicDraw);
@@ -936,11 +936,12 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 	alias StaticReads = MembersByUDA!(VDataType, DrawHint.StaticRead);
 
 	alias All = AliasSeq!(Statics, Dynamics, Streams, StaticReads);
-
-	alias DrawFunction = draw_function;
 	enum VboCount = All.length;
-	static assert(is(typeof(DrawFunction) : DrawType), "expected last argument in template arguments to be of type DrawType");
 
+	alias StructUDAs = getUDAs!(VDataType, DrawType);
+	static assert(is(typeof(StructUDAs[0]) == DrawType));
+	alias DrawFunction = StructUDAs[0];
+	
 	private {
 
 		GLuint handle_;
@@ -1090,12 +1091,16 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 
 		}
 
-		alias MembersWithTypeProvider = MembersByUDA!(VDataType, TypeProvider_);
-		//static assert(MembersWithTypeProvider.length == 1, "struct needs @TypeProvider (decides what primitive to pass to draw call)");
-		//vao.draw_type_ = TypeToGL!(typeof(__traits(getMember, data, MembersWithTypeProvider[0])[0]));
+		static if (DrawFunction == DrawType.DrawElements || DrawFunction == DrawType.DrawElementsInstanced) {
+			alias MembersWithTypeProvider = MembersByUDA!(VDataType, TypeProvider_);
+			static assert(MembersWithTypeProvider.length == 1, "struct needs @TypeProvider (decides what primitive to pass to draw call)");
+			vao.draw_type_ = TypeToGL!(typeof(__traits(getMember, data, MembersWithTypeProvider[0])[0]));
+		}
 		
-		alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
-		vao.num_instances_ = __traits(getMember, data, MembersWithInstanceCountProvider[0]).length;
+		static if (DrawFunction == DrawType.DrawArraysInstanced || DrawFunction == DrawType.DrawElementsInstanced) {
+			alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
+			vao.num_instances_ = __traits(getMember, data, MembersWithInstanceCountProvider[0]).length;
+		}
 
 		alias MembersWithCountProvider = MembersByUDA!(VDataType, VertexCountProvider_);
 		static assert(MembersWithCountProvider.length == 1, "struct needs @VertexCountProvider, either a function or an array!");		
