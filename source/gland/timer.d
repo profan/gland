@@ -95,7 +95,7 @@ ulong ticksPerSecond() {
  * functionality to be accurate enough, often 1-2ms is the limit, after which point the 
  * busy wait will kick in and be used instead, without the user needing to worry.
 */
-void waitUntilTick(ref StopWatch sw, long ticks_per_frame) {
+void waitUntilTick(ref StopWatch sw, ulong ticks_per_frame) {
 
 	long clock_ticks_per_second = sw.ticksPerSecond();
 
@@ -124,7 +124,7 @@ void delayMs(uint ms) {
 
 } //delayMs
 
-void busyWaitTicks(ref StopWatch sw, size_t total_ticks) {
+void busyWaitTicks(ref StopWatch sw, ulong total_ticks) {
 
 	long ticks_left = total_ticks - sw.peek();
 	while (ticks_left > 0) {

@@ -885,6 +885,23 @@ auto OffsetProvider() {
 	return OffsetProvider_();
 } // OffsetProvider
 
+struct TypeProvider_ {
+} // TypeProvider_
+
+@property 
+auto TypeProvider() {
+	return TypeProvider_();
+} // TypeProvider
+
+struct BufferSizeFrom_(alias M) {
+	enum From = M.stringof;
+} // BufferSizeFrom_
+
+@property
+auto BufferSizeFrom(alias M)() {
+	return BufferSizeFrom_!M();
+} // BufferSizeFrom
+
 template MembersByUDA(T, alias attribute) {
 
 	import std.meta : Filter;
@@ -905,12 +922,14 @@ template MembersByUDA(T, alias attribute) {
 struct VertexArrayT(VDataType, DrawType draw_function) {
 
 	import std.meta : AliasSeq;
+	import std.traits : isInstanceOf;
 
 	alias Statics = MembersByUDA!(VDataType, DrawHint.StaticDraw);
 	alias Dynamics = MembersByUDA!(VDataType, DrawHint.DynamicDraw);
 	alias Streams = MembersByUDA!(VDataType, DrawHint.StreamDraw);
+	alias StaticReads = MembersByUDA!(VDataType, DrawHint.StaticRead);
 
-	alias All = AliasSeq!(Statics, Dynamics, Streams);
+	alias All = AliasSeq!(Statics, Dynamics, Streams, StaticReads);
 
 	alias DrawFunction = draw_function;
 	enum VboCount = All.length;
@@ -930,7 +949,7 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 	@disable this(this);
 	@disable ref typeof(this) opAssign(ref typeof(this));
 
-	alias UdaTuple = Tuple!(DrawHint, "draw_hint", BufferTarget, "buffer_target", bool, "normalized");
+	alias UdaTuple = Tuple!(DrawHint, "draw_hint", BufferTarget, "buffer_target", bool, "normalized", string, "size_from");
 
 	static UdaTuple CollectUDAs(alias m)() {
 
@@ -941,6 +960,8 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 				uda_tuple.draw_hint = uda;
 			} else static if (is(typeof(uda) == BufferTarget)) {
 				uda_tuple.buffer_target = uda;
+			} else static if (isInstanceOf!(BufferSizeFrom_, typeof(uda))) {
+				uda_tuple.size_from = typeof(uda).From;
 			}
 		}
 
@@ -962,19 +983,23 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 
 				alias VertexType = typeof(__traits(getMember, VDataType, VS)[0]);
 
+				static if (uda_tuple.size_from != "") {
+					alias MemberType = typeof(__traits(getMember, VDataType, uda_tuple.size_from));
+					auto new_buffer_size = MemberType.sizeof * __traits(getMember, data, uda_tuple.size_from).length;
+				} else {
+					auto new_buffer_size = VertexType.sizeof * __traits(getMember, data, VS).length;
+				}
+
 				Renderer.bindBuffer(uda_tuple.buffer_target, vao.vbos_[v_i]);
 				glBufferData(uda_tuple.buffer_target,
-					VertexType.sizeof * __traits(getMember, data, VS).length,
+					new_buffer_size,
 					__traits(getMember, data, VS).ptr,
 					uda_tuple.draw_hint
 				);
 
-				static if (uda_tuple.buffer_target == BufferTarget.ElementArrayBuffer) {
-					vao.draw_type_ = TypeToGL!VertexType;
-				}
-
-				static if (!is_new) continue;
-				else static if (uda_tuple.buffer_target != BufferTarget.ElementArrayBuffer) {
+				static if (!is_new) {
+					continue;
+				} else static if (uda_tuple.buffer_target == BufferTarget.ArrayBuffer) {
 					foreach (i, m; PODMembers!VertexType) {
 						alias MemberType = typeof(__traits(getMember, VertexType, m));
 						enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
@@ -1001,6 +1026,10 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 			}
 
 		}
+
+		alias MembersWithTypeProvider = MembersByUDA!(VDataType, TypeProvider_);
+		static assert(MembersWithTypeProvider.length == 1, "struct needs @TypeProvider (decides what primitive to pass to draw call)");
+		vao.draw_type_ = TypeToGL!(typeof(__traits(getMember, VDataType, MembersWithTypeProvider[0])[0]));
 
 		alias MembersWithCountProvider = MembersByUDA!(VDataType, VertexCountProvider_);
 		static assert(MembersWithCountProvider.length == 1, "struct needs @VertexCountProvider, either a function or an array!");
