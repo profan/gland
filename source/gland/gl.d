@@ -685,8 +685,23 @@ struct Texture {
 
 	} // asSurface
 
-
 } // Texture
+
+struct Texture1D {
+
+} // Texture1D
+
+struct Texture2D {
+
+} // Texture2D
+
+struct Texture3D {
+
+} // Texture3D
+
+struct TextureArray {
+
+} // TextureArray
 
 struct OpaqueTexture {
 
@@ -941,6 +956,8 @@ struct VertexArrayT(VDataType) {
 	alias StructUDAs = getUDAs!(VDataType, DrawType);
 	static assert(StructUDAs.length == 1, "expected @DrawType annotation on struct!");
 	static if (StructUDAs.length == 1) alias DrawFunction = StructUDAs[0];
+
+	enum isInstancedDrawing = (DrawFunction == DrawType.DrawArraysInstanced || DrawFunction == DrawType.DrawElementsInstanced);
 	
 	private {
 
@@ -948,7 +965,10 @@ struct VertexArrayT(VDataType) {
 		GLuint[VboCount] vbos_;
 		DrawPrimitive type_;
 		uint num_vertices_;
-		uint num_instances_;
+
+		static if (isInstancedDrawing) {
+			uint num_instances_;
+		}
 
 		GLenum draw_type_;
 
@@ -1097,7 +1117,7 @@ struct VertexArrayT(VDataType) {
 			vao.draw_type_ = TypeToGL!(typeof(__traits(getMember, data, MembersWithTypeProvider[0])[0]));
 		}
 		
-		static if (DrawFunction == DrawType.DrawArraysInstanced || DrawFunction == DrawType.DrawElementsInstanced) {
+		static if (isInstancedDrawing) {
 			alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
 			vao.num_instances_ = cast(uint)__traits(getMember, data, MembersWithInstanceCountProvider[0]).length;
 		}
