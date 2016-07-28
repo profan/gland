@@ -422,6 +422,25 @@ struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, Uniforms...) 
 
 } // Shader
 
+struct ComputeShader {
+
+	private {
+
+		GLuint handle_;
+
+	}
+
+	auto compute(Args...)(Args args) {
+
+	} // compute
+
+	@property
+	ref GLuint handle() {
+		return handle_;
+	} // handle
+
+} // ComputeShader
+
 enum InternalTextureFormat {
 
 	/* RGBA */
@@ -1392,7 +1411,7 @@ static:
 
 	//GL_UNIFORM_BUFFER
 	GLuint uniform_buffer_binding;
-	
+
 	//GL_TEXTURE_BUFFER
 	GLuint texture_buffer_binding;
 
@@ -1735,16 +1754,16 @@ private:
 		return result;
 
 	} // isAnyBound
-	
+
 	nothrow @nogc
 	void bindTexture(GLuint texture_handle, uint unit) {
-	
+
 		if (texture_binding_2d[unit] != texture_handle) {
 			glActiveTexture(GL_TEXTURE0 + unit);
 			glBindTexture(GL_TEXTURE_2D, texture_handle);
 			texture_binding_2d[unit] = texture_handle;
 		}
-	
+
 	} // bindTexture
 
 	nothrow @nogc
