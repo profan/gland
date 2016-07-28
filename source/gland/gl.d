@@ -940,17 +940,25 @@ template MembersByUDA(T, alias attribute) {
 
 } // MembersByUDA
 
+template CollectEnumMembers(T, ET) {
+
+	import std.meta : staticMap;
+	import std.traits : EnumMembers;
+
+	template GetMembers(alias EM) {
+		alias GetMembers = MembersByUDA!(T, EM);
+	} // GetMember
+
+	alias CollectEnumMembers = staticMap!(GetMembers, EnumMembers!ET);
+
+} // CollectEnumMembers
+
 struct VertexArrayT(VDataType) {
 
 	import std.meta : AliasSeq;
 	import std.traits : isInstanceOf, getUDAs;
 
-	alias Statics = MembersByUDA!(VDataType, DrawHint.StaticDraw);
-	alias Dynamics = MembersByUDA!(VDataType, DrawHint.DynamicDraw);
-	alias Streams = MembersByUDA!(VDataType, DrawHint.StreamDraw);
-	alias StaticReads = MembersByUDA!(VDataType, DrawHint.StaticRead);
-
-	alias All = AliasSeq!(Statics, Dynamics, Streams, StaticReads);
+	alias All = CollectEnumMembers!(VDataType, DrawHint);
 	enum VboCount = All.length;
 
 	alias StructUDAs = getUDAs!(VDataType, DrawType);
