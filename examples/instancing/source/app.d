@@ -67,7 +67,7 @@ struct VertexData {
 
 } // VertexData
 
-alias InstanceVao = VertexArrayT!(VertexData, DrawType.DrawArraysInstanced);
+alias InstanceVao = VertexArrayT!VertexData;
 
 void main() {
 

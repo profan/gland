@@ -925,7 +925,7 @@ template MembersByUDA(T, alias attribute) {
 
 } // MembersByUDA
 
-struct VertexArrayT(VDataType, DrawType draw_function) {
+struct VertexArrayT(VDataType) {
 
 	import std.meta : AliasSeq;
 	import std.traits : isInstanceOf, getUDAs;
@@ -939,8 +939,8 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 	enum VboCount = All.length;
 
 	alias StructUDAs = getUDAs!(VDataType, DrawType);
-	static assert(is(typeof(StructUDAs[0]) == DrawType));
-	alias DrawFunction = StructUDAs[0];
+	static assert(StructUDAs.length == 1, "expected @DrawType annotation on struct!");
+	static if (StructUDAs.length == 1) alias DrawFunction = StructUDAs[0];
 	
 	private {
 
@@ -1099,7 +1099,7 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 		
 		static if (DrawFunction == DrawType.DrawArraysInstanced || DrawFunction == DrawType.DrawElementsInstanced) {
 			alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
-			vao.num_instances_ = __traits(getMember, data, MembersWithInstanceCountProvider[0]).length;
+			vao.num_instances_ = cast(uint)__traits(getMember, data, MembersWithInstanceCountProvider[0]).length;
 		}
 
 		alias MembersWithCountProvider = MembersByUDA!(VDataType, VertexCountProvider_);
@@ -1552,14 +1552,6 @@ static:
 				// currently just a single bind, think about this later
 				Renderer.bindTexture(args[i].handle, current_texture++);
 
-			} else static if (is (T : Texture*[])) {
-
-				assert(args[i].length <= 16, "tried passing more than 16 textures?");
-
-				foreach (t_i, texture; args[i]) {
-					Renderer.bindTexture(*args[i], t_i);
-				}
-
 			}
 
 		}
@@ -1592,7 +1584,7 @@ static:
 		}
 
 		static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
-			glDrawArrays(vao.type_, offset, vertex_count);
+			glDrawArrays(vao.type_, cast(int)offset, vertex_count);
 		} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
 			glDrawArraysInstanced(vao.type_, cast(int)offset, vertex_count, vao.num_instances_);
 		} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
@@ -1744,8 +1736,6 @@ private:
 	nothrow @nogc
 	bool bindBuffer(BufferTarget type, GLuint id) {
 
-		import std.stdio : writefln;
-
 		switch (type) with (BufferTarget) {
 
 			case ArrayBuffer: {
@@ -1753,7 +1743,7 @@ private:
 				if (array_buffer_binding == id) {
 					return false;
 				}
-				
+
 				array_buffer_binding = id;
 				break;
 

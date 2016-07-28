@@ -79,6 +79,7 @@ struct ImVert {
 
 } // ImVert
 
+@(DrawType.DrawElements)
 struct ImguiData {
 
 	@(DrawHint.StreamDraw)
@@ -87,6 +88,7 @@ struct ImguiData {
 
 	@(DrawHint.StreamDraw)
 	@(BufferTarget.ElementArrayBuffer)
+	@InstanceCountProvider
 	@TypeProvider
 	ImDrawIdx[] indices;
 
@@ -99,7 +101,7 @@ struct ImguiData {
 
 } // ImguiData
 
-alias ImguiVao = VertexArrayT!(ImguiData, DrawType.DrawElements);
+alias ImguiVao = VertexArrayT!ImguiData;
 
 struct ImguiContext {
 

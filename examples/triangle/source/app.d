@@ -49,6 +49,7 @@ struct Vertex2f3f {
 
 } // Vertex2f3f
 
+@(DrawType.DrawArrays)
 struct VertexData {
 
 	@(DrawHint.StaticDraw)
@@ -58,7 +59,7 @@ struct VertexData {
 
 } // VertexData
 
-alias TriangleVao = VertexArrayT!(VertexData, DrawType.DrawArrays);
+alias TriangleVao = VertexArrayT!VertexData;
 
 void main() {
 

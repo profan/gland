@@ -49,6 +49,7 @@ struct Vertex2f3f {
 
 } // Vertex2f3f
 
+@(DrawType.DrawElements)
 struct VertexData {
 
 	@(DrawHint.StaticDraw)
@@ -64,7 +65,7 @@ struct VertexData {
 } // VertexData
 
 // VAO TYPE YES
-alias ElementsVAO = VertexArrayT!(VertexData, DrawType.DrawElements);
+alias ElementsVAO = VertexArrayT!VertexData;
 
 void main() {
 
