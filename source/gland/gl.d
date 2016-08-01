@@ -1083,7 +1083,7 @@ struct VertexArrayT(VDataType) {
 							glVertexAttribPointer(i,
 								VertexType.sizeof / ElementType.sizeof,
 								TypeToGL!ElementType,
-								GL_FALSE, // normalization
+								GL_FALSE, // normalization TODO
 								VertexType.sizeof, // stride to jump
 								cast(const(void)*)0
 							);
@@ -1096,6 +1096,26 @@ struct VertexArrayT(VDataType) {
 							current_attrib_index += 1;
 
 						}
+
+					} else static if (__traits(isPOD, VertexType)) {
+
+						uint i = current_attrib_index;
+						alias ElementType = VertexType;
+
+						glEnableVertexAttribArray(i);
+						glVertexAttribPointer(i,
+							VertexType.sizeof,
+							TypeToGL!ElementType,
+							GL_FALSE, // normalization TODO
+							VertexType.sizeof,
+							cast(const(void*))0
+						);
+
+						static if (has_divisor) {
+							glVertexAttribDivisor(current_attrib_index, attrib_divisor);
+						}
+
+						current_attrib_index += 1;
 
 					} else {
 					
