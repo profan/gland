@@ -599,11 +599,6 @@ struct TextureParams {
 
 } // TextureParams
 
-enum IsOpaque : bool {
-	Yes = true,
-	No = false
-} // IsOpaque
-
 struct Texture {
 
 	private {
@@ -637,13 +632,13 @@ struct Texture {
 
 	@disable ref Texture opAssign(ref Texture);
 
-	static Error create(DataType)(ref Texture texture, DataType[] texture_data, int width, int height, TextureParams params) {
+	static Error create(DataType)(ref Texture texture, in DataType[] texture_data, int width, int height, TextureParams params) {
 
 		return Texture.create(texture, texture_data.ptr, width, height, params);
 
 	} // create
 
-	static Error create(DataType)(ref Texture texture, DataType* texture_data, int width, int height, TextureParams params) {
+	static Error create(DataType)(ref Texture texture, in DataType* texture_data, int width, int height, TextureParams params) {
 
 		texture.width_ = width;
 		texture.height_ = height;
@@ -1097,7 +1092,7 @@ struct VertexArrayT(VDataType) {
 
 						}
 
-					} else static if (__traits(isPOD, VertexType)) {
+					} else static if (!is (VertexType == struct) && __traits(isPOD, VertexType)) {
 
 						uint i = current_attrib_index;
 						alias ElementType = VertexType;
