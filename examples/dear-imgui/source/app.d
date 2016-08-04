@@ -79,6 +79,7 @@ struct ImVert {
 
 } // ImVert
 
+@(DrawType.DrawElements)
 struct ImguiData {
 
 	@(DrawHint.StreamDraw)
@@ -87,14 +88,9 @@ struct ImguiData {
 
 	@(DrawHint.StreamDraw)
 	@(BufferTarget.ElementArrayBuffer)
+	@InstanceCountProvider
+	@TypeProvider
 	ImDrawIdx[] indices;
-
-	@property
-	nothrow @nogc
-	@OffsetProvider
-	uint drawOffset() {
-		return 0;
-	} // drawOffset
 
 	@property
 	nothrow @nogc
@@ -105,7 +101,7 @@ struct ImguiData {
 
 } // ImguiData
 
-alias ImguiVao = VertexArrayT!(ImguiData, DrawType.DrawElements);
+alias ImguiVao = VertexArrayT!ImguiData;
 
 struct ImguiContext {
 
@@ -272,7 +268,7 @@ struct ImguiContext {
 				depth_test : false,
 				scissor_test : true,
 				blend_test : true
-	   		}
+			}
 		};
 
 		int width = window_.width;
@@ -300,24 +296,25 @@ struct ImguiContext {
 				auto pcmd = ImDrawList_GetCmdPtr(cmd_list, i);
 
 				if (pcmd.UserCallback) {
-
 					pcmd.UserCallback(cmd_list, pcmd);
-
 				} else {
-
-					draw_params.state.scissor_box = [
-						cast(int)pcmd.ClipRect.x,
-						cast(int)(height - pcmd.ClipRect.w),
-						cast(int)(pcmd.ClipRect.z - pcmd.ClipRect.x),
-						cast(int)(pcmd.ClipRect.w - pcmd.ClipRect.y)
-					];
+					
+					// these are some arbitrary as fuck numbers by the way TODO: fix cliprects
+					draw_params.state.scissor_box = tuple(
+						cast(int)(pcmd.ClipRect.x)-15,
+						cast(int)(height - pcmd.ClipRect.w)-15,
+						cast(int)(pcmd.ClipRect.z - pcmd.ClipRect.x)+50,
+						cast(int)(pcmd.ClipRect.w - pcmd.ClipRect.y)+50
+					);
 			
 					// temporary opaque texture
-					auto cur_texture = Texture.fromId(cast(uint)pcmd.TextureId);
+					OpaqueTexture cur_texture = Texture.fromId(cast(uint)pcmd.TextureId);
 					Renderer.draw_with_offset(shader_, vao_, draw_params, pcmd.ElemCount, idx_buffer_offset, proj_data[], &cur_texture);
-
+					
 				}
+				
 				idx_buffer_offset += pcmd.ElemCount;
+				
 			}
 		}
 
@@ -414,7 +411,7 @@ void main() {
 
 		// FRAEMZ
 		context.newFrame(1.0);
-		igText("Hello, world!");
+		igText("Hello, World!");
 		context.endFrame();
 
 		window.present();

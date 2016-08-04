@@ -53,6 +53,7 @@ struct Vertex2f2f {
 
 } // Vertex2f2f
 
+@(DrawType.DrawArrays)
 struct VertexData {
 
 	@VertexCountProvider
@@ -62,7 +63,7 @@ struct VertexData {
 
 } // VertexData
 
-alias TextureVao = VertexArrayT!(VertexData, DrawType.DrawArrays);
+alias TextureVao = VertexArrayT!VertexData;
 
 void main() {
 

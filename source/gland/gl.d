@@ -82,14 +82,12 @@ const (char*) to(T : char*)(GLenum value) {
 */
 
 struct VertexAttribDivisor_ {
-
 	GLuint divisor;
-
 } // VertexAttribDivisor
 
-@property vertexAttribDivisor(GLuint divisor) {
+@property VertexAttribDivisor(GLuint divisor) {
 	return VertexAttribDivisor_(divisor);
-} // vertexAttribDivisor
+} // VertexAttribDivisor
 
 // attribute normalization in structures
 struct Normalized_ {
@@ -424,6 +422,25 @@ struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, Uniforms...) 
 
 } // Shader
 
+struct ComputeShader {
+
+	private {
+
+		GLuint handle_;
+
+	}
+
+	auto compute(Args...)(Args args) {
+
+	} // compute
+
+	@property
+	ref GLuint handle() {
+		return handle_;
+	} // handle
+
+} // ComputeShader
+
 enum InternalTextureFormat {
 
 	/* RGBA */
@@ -582,11 +599,6 @@ struct TextureParams {
 
 } // TextureParams
 
-enum IsOpaque : bool {
-	Yes = true,
-	No = false
-} // IsOpaque
-
 struct Texture {
 
 	private {
@@ -620,13 +632,13 @@ struct Texture {
 
 	@disable ref Texture opAssign(ref Texture);
 
-	static Error create(DataType)(ref Texture texture, DataType[] texture_data, int width, int height, TextureParams params) {
+	static Error create(DataType)(ref Texture texture, in DataType[] texture_data, int width, int height, TextureParams params) {
 
 		return Texture.create(texture, texture_data.ptr, width, height, params);
 
 	} // create
 
-	static Error create(DataType)(ref Texture texture, DataType* texture_data, int width, int height, TextureParams params) {
+	static Error create(DataType)(ref Texture texture, in DataType* texture_data, int width, int height, TextureParams params) {
 
 		texture.width_ = width;
 		texture.height_ = height;
@@ -687,8 +699,23 @@ struct Texture {
 
 	} // asSurface
 
-
 } // Texture
+
+struct Texture1D {
+
+} // Texture1D
+
+struct Texture2D {
+
+} // Texture2D
+
+struct Texture3D {
+
+} // Texture3D
+
+struct TextureArray {
+
+} // TextureArray
 
 struct OpaqueTexture {
 
@@ -877,6 +904,14 @@ auto VertexCountProvider() {
 	return VertexCountProvider_();
 } // VertexCountProvider
 
+struct InstanceCountProvider_ {
+} // InstanceCountProvider_
+
+@property
+auto InstanceCountProvider() {
+	return InstanceCountProvider_();
+} // InstanceCountProvider
+
 struct OffsetProvider_ {
 } // OffsetProvider
 
@@ -884,6 +919,23 @@ struct OffsetProvider_ {
 auto OffsetProvider() {
 	return OffsetProvider_();
 } // OffsetProvider
+
+struct TypeProvider_ {
+} // TypeProvider_
+
+@property 
+auto TypeProvider() {
+	return TypeProvider_();
+} // TypeProvider
+
+struct BufferSizeFrom_(alias M) {
+	enum From = M.stringof;
+} // BufferSizeFrom_
+
+@property
+auto BufferSizeFrom(alias M)() {
+	return BufferSizeFrom_!M();
+} // BufferSizeFrom
 
 template MembersByUDA(T, alias attribute) {
 
@@ -902,26 +954,46 @@ template MembersByUDA(T, alias attribute) {
 
 } // MembersByUDA
 
-struct VertexArrayT(VDataType, DrawType draw_function) {
+template CollectEnumMembers(T, ET) {
+
+	import std.meta : staticMap;
+	import std.traits : EnumMembers;
+
+	template GetMembers(alias EM) {
+		alias GetMembers = MembersByUDA!(T, EM);
+	} // GetMember
+
+	alias CollectEnumMembers = staticMap!(GetMembers, EnumMembers!ET);
+
+} // CollectEnumMembers
+
+struct VertexArrayT(VDataType) {
 
 	import std.meta : AliasSeq;
+	import std.traits : isInstanceOf, getUDAs;
 
-	alias Statics = MembersByUDA!(VDataType, DrawHint.StaticDraw);
-	alias Dynamics = MembersByUDA!(VDataType, DrawHint.DynamicDraw);
-	alias Streams = MembersByUDA!(VDataType, DrawHint.StreamDraw);
-
-	alias All = AliasSeq!(Statics, Dynamics, Streams);
-
-	alias DrawFunction = draw_function;
+	// HACK: this is getting around the fact that i can't just get all members with a certain UDA for enum types, the concrete value
+	//  was in this case required, so it iterates over the enum's members and concatenates the results.
+	// One major problem with this approach is ordering of data, because the order of members matters.
+	alias All = CollectEnumMembers!(VDataType, DrawHint);
 	enum VboCount = All.length;
-	static assert(is(typeof(DrawFunction) : DrawType), "expected last argument in template arguments to be of type DrawType");
 
+	alias StructUDAs = getUDAs!(VDataType, DrawType);
+	static assert(StructUDAs.length == 1, "expected @DrawType annotation on struct!");
+	static if (StructUDAs.length == 1) alias DrawFunction = StructUDAs[0];
+
+	enum isInstancedDrawing = (DrawFunction == DrawType.DrawArraysInstanced || DrawFunction == DrawType.DrawElementsInstanced);
+	
 	private {
 
 		GLuint handle_;
 		GLuint[VboCount] vbos_;
 		DrawPrimitive type_;
 		uint num_vertices_;
+
+		static if (isInstancedDrawing) {
+			uint num_instances_;
+		}
 
 		GLenum draw_type_;
 
@@ -930,7 +1002,7 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 	@disable this(this);
 	@disable ref typeof(this) opAssign(ref typeof(this));
 
-	alias UdaTuple = Tuple!(DrawHint, "draw_hint", BufferTarget, "buffer_target", bool, "normalized");
+	alias UdaTuple = Tuple!(DrawHint, "draw_hint", BufferTarget, "buffer_target", bool, "normalized", string, "size_from");
 
 	static UdaTuple CollectUDAs(alias m)() {
 
@@ -941,6 +1013,8 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 				uda_tuple.draw_hint = uda;
 			} else static if (is(typeof(uda) == BufferTarget)) {
 				uda_tuple.buffer_target = uda;
+			} else static if (isInstanceOf!(BufferSizeFrom_, typeof(uda))) {
+				uda_tuple.size_from = typeof(uda).From;
 			}
 		}
 
@@ -952,6 +1026,8 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 	private static auto uploadData(bool is_new)(ref typeof(this) vao, ref VDataType data, DrawPrimitive type) {
 
 		import std.traits : isArray, isCallable, hasUDA, FieldNameTuple, getSymbolsByUDA, getUDAs;
+		
+		uint current_attrib_index = 0;
 
 		foreach (v_i, VS; All) {
 
@@ -962,39 +1038,117 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 
 				alias VertexType = typeof(__traits(getMember, VDataType, VS)[0]);
 
+				static if (uda_tuple.size_from != "") {
+					alias MemberType = typeof(__traits(getMember, VDataType, uda_tuple.size_from));
+					auto new_buffer_size = MemberType.sizeof * __traits(getMember, data, uda_tuple.size_from).length;
+				} else {
+					auto new_buffer_size = VertexType.sizeof * __traits(getMember, data, VS).length;
+				}
+
 				Renderer.bindBuffer(uda_tuple.buffer_target, vao.vbos_[v_i]);
 				glBufferData(uda_tuple.buffer_target,
-					VertexType.sizeof * __traits(getMember, data, VS).length,
+					new_buffer_size,
 					__traits(getMember, data, VS).ptr,
 					uda_tuple.draw_hint
 				);
 
-				static if (uda_tuple.buffer_target == BufferTarget.ElementArrayBuffer) {
-					vao.draw_type_ = TypeToGL!VertexType;
-				}
+				static if (!is_new) {
 
-				static if (!is_new) continue;
-				else static if (uda_tuple.buffer_target != BufferTarget.ElementArrayBuffer) {
-					foreach (i, m; PODMembers!VertexType) {
-						alias MemberType = typeof(__traits(getMember, VertexType, m));
-						enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
+					continue;
 
-						enum IsNormalized = hasUDA!(__traits(getMember, VertexType, m), Normalized_);
+				} else static if (uda_tuple.buffer_target == BufferTarget.ArrayBuffer) {
 
-						static if (isArray!MemberType) {
-							alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
-						} else {
-							alias ElementType = MemberType;
+					alias VertexAttribUDAs = getUDAs!(__traits(getMember, VDataType, VS), VertexAttribDivisor_);
+					static if (VertexAttribUDAs.length > 0) {
+						pragma(msg, "WAH");
+						enum has_divisor = true;
+						enum attrib_divisor = VertexAttribUDAs[0].divisor;
+					} else {
+						enum has_divisor = false;
+					}
+
+					static if (isArray!VertexType) {
+					
+						// handles primitive arrays
+
+						static if (isArray!(typeof(__traits(getMember, VDataType, VS)[0]))) {
+						
+							uint i = current_attrib_index;
+							alias ElementType = typeof(__traits(getMember, VDataType, VS)[0][0]);
+							enum ArrLen = VertexType.length;
+
+							glEnableVertexAttribArray(i);
+							glVertexAttribPointer(i,
+								VertexType.sizeof / ElementType.sizeof,
+								TypeToGL!ElementType,
+								GL_FALSE, // normalization TODO
+								VertexType.sizeof, // stride to jump
+								cast(const(void)*)0
+							);
+							
+							static if (has_divisor) {
+								pragma(msg, "WAGH");
+								glVertexAttribDivisor(current_attrib_index, attrib_divisor);
+							}
+
+							current_attrib_index += 1;
+
 						}
+
+					} else static if (!is (VertexType == struct) && __traits(isPOD, VertexType)) {
+
+						uint i = current_attrib_index;
+						alias ElementType = VertexType;
 
 						glEnableVertexAttribArray(i);
 						glVertexAttribPointer(i,
-							MemberType.sizeof / ElementType.sizeof,
+							VertexType.sizeof,
 							TypeToGL!ElementType,
-							IsNormalized, // normalization
-							VertexType.sizeof, // stride to jump
-							cast(const(void)*)MemberOffset
+							GL_FALSE, // normalization TODO
+							VertexType.sizeof,
+							cast(const(void*))0
 						);
+
+						static if (has_divisor) {
+							glVertexAttribDivisor(current_attrib_index, attrib_divisor);
+						}
+
+						current_attrib_index += 1;
+
+					} else {
+					
+						// handles structures
+
+						foreach (m; PODMembers!VertexType) {
+
+							uint i = current_attrib_index;
+							alias MemberType = typeof(__traits(getMember, VertexType, m));
+							enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
+							enum IsNormalized = hasUDA!(__traits(getMember, VertexType, m), Normalized_);
+
+							static if (isArray!MemberType) {
+								alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
+							} else {
+								alias ElementType = MemberType;
+							}
+
+							glEnableVertexAttribArray(i);
+							glVertexAttribPointer(i,
+								MemberType.sizeof / ElementType.sizeof,
+								TypeToGL!ElementType,
+								IsNormalized, // normalization
+								VertexType.sizeof, // stride to jump
+								cast(const(void)*)MemberOffset
+							);
+							
+							static if (has_divisor) {
+								glVertexAttribDivisor(current_attrib_index, attrib_divisor);
+							}
+
+							current_attrib_index += 1;
+
+						}
+
 					}
 				}
 
@@ -1002,8 +1156,19 @@ struct VertexArrayT(VDataType, DrawType draw_function) {
 
 		}
 
+		static if (DrawFunction == DrawType.DrawElements || DrawFunction == DrawType.DrawElementsInstanced) {
+			alias MembersWithTypeProvider = MembersByUDA!(VDataType, TypeProvider_);
+			static assert(MembersWithTypeProvider.length == 1, "struct needs @TypeProvider (decides what primitive to pass to draw call)");
+			vao.draw_type_ = TypeToGL!(typeof(__traits(getMember, data, MembersWithTypeProvider[0])[0]));
+		}
+		
+		static if (isInstancedDrawing) {
+			alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
+			vao.num_instances_ = cast(uint)__traits(getMember, data, MembersWithInstanceCountProvider[0]).length;
+		}
+
 		alias MembersWithCountProvider = MembersByUDA!(VDataType, VertexCountProvider_);
-		static assert(MembersWithCountProvider.length == 1, "struct needs @VertexCountProvider, either a function or an array!");
+		static assert(MembersWithCountProvider.length == 1, "struct needs @VertexCountProvider, either a function or an array!");		
 
 		enum Provider = MembersWithCountProvider[0];
 		static if (isArray!(typeof(__traits(getMember, VDataType, Provider)))) {
@@ -1178,13 +1343,15 @@ struct Device {
 
 } // Device
 
+alias ScissorBox = Tuple!(int, "x", int, "y", uint, "w", uint, "h");
+
 mixin template RendererStateVars() {
 
 	//GL_SCISSOR_TEST
 	bool scissor_test;
 
 	//GL_SCISSOR_BOX
-	GLint[4] scissor_box;
+	ScissorBox scissor_box;
 
 	//GL_STENCIL_TEST
 	bool stencil_test;
@@ -1262,7 +1429,7 @@ static:
 
 	//GL_UNIFORM_BUFFER
 	GLuint uniform_buffer_binding;
-	
+
 	//GL_TEXTURE_BUFFER
 	GLuint texture_buffer_binding;
 
@@ -1450,14 +1617,6 @@ static:
 				// currently just a single bind, think about this later
 				Renderer.bindTexture(args[i].handle, current_texture++);
 
-			} else static if (is (T : Texture*[])) {
-
-				assert(args[i].length <= 16, "tried passing more than 16 textures?");
-
-				foreach (t_i, texture; args[i]) {
-					Renderer.bindTexture(*args[i], t_i);
-				}
-
 			}
 
 		}
@@ -1474,7 +1633,7 @@ static:
 
 		if (scissor_test) {
 			scissor_box = params.state.scissor_box;
-			glScissor(scissor_box[0], scissor_box[1], scissor_box[2], scissor_box[3]);
+			glScissor(scissor_box.expand);
 		}
 
 		// blendaroni, TODO check if already set
@@ -1489,22 +1648,14 @@ static:
 
 		}
 
-		// basic
-		import std.traits : hasMember;
-		static if (hasMember!(VertexArrayType, "DrawFunction")) {
-
-			static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
-				glDrawArrays(vao.type_, 0, vertex_count);
-			} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
-				//glDrawArraysInstanced(vao.type_, 0, vertex_count, 
-			} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
-				glDrawElements(vao.type_, vertex_count, vao.draw_type_, offset);
-			} else static if (VertexArrayType.DrawFunction == DrawType.DrawElementsInstanced) {
-				glDrawElementsInstanced(vao.type_, vao.num_vertices_, GL_UNSIGNED_INT, 0);
-			}
-
-		} else {
-			glDrawArrays(vao.type_, 0, vao.num_vertices_);
+		static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
+			glDrawArrays(vao.type_, cast(int)offset, vertex_count);
+		} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
+			glDrawArraysInstanced(vao.type_, cast(int)offset, vertex_count, vao.num_instances_);
+		} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
+			glDrawElements(vao.type_, vertex_count, vao.draw_type_, offset);
+		} else static if (VertexArrayType.DrawFunction == DrawType.DrawElementsInstanced) {
+			glDrawElementsInstanced(vao.type_, vao.num_vertices_, vao.draw_type_, 0);
 		}
 
 	} // draw
@@ -1621,16 +1772,16 @@ private:
 		return result;
 
 	} // isAnyBound
-	
+
 	nothrow @nogc
 	void bindTexture(GLuint texture_handle, uint unit) {
-	
+
 		if (texture_binding_2d[unit] != texture_handle) {
 			glActiveTexture(GL_TEXTURE0 + unit);
 			glBindTexture(GL_TEXTURE_2D, texture_handle);
 			texture_binding_2d[unit] = texture_handle;
 		}
-	
+
 	} // bindTexture
 
 	nothrow @nogc
@@ -1650,8 +1801,6 @@ private:
 	nothrow @nogc
 	bool bindBuffer(BufferTarget type, GLuint id) {
 
-		import std.stdio : writefln;
-
 		switch (type) with (BufferTarget) {
 
 			case ArrayBuffer: {
@@ -1659,7 +1808,7 @@ private:
 				if (array_buffer_binding == id) {
 					return false;
 				}
-				
+
 				array_buffer_binding = id;
 				break;
 

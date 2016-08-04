@@ -9,21 +9,22 @@ import gland.win;
 import gland.gl;
 
 immutable char* vs_shader = "
-	#version 330
+	#version 330 core
 
 	layout (location = 0) in vec2 position;
 	layout (location = 1) in vec3 colour;
+	layout (location = 2) in vec2 offset;
 
 	out vec3 v_colour;
 
 	void main() {
-		gl_Position = vec4(position, 0.0, 1.0);
+		gl_Position = vec4(position + offset, 0.0, 1.0);
 		v_colour = colour;
 	}
 ";
 
 immutable char* fs_shader = "
-	#version 330
+	#version 330 core
 
 	in vec3 v_colour;
 	out vec4 f_colour;
@@ -35,10 +36,11 @@ immutable char* fs_shader = "
 
 alias Mat4f = float[4][4];
 
-alias TriangleShader = Shader!(
+alias InstanceShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0),
-		AttribTuple("colour", 1)
+		AttribTuple("colour", 1),
+		AttribTuple("offset", 2)
 	]
 );
 
@@ -49,23 +51,23 @@ struct Vertex2f3f {
 
 } // Vertex2f3f
 
-@(DrawType.DrawElements)
+@(DrawType.DrawArraysInstanced)
 struct VertexData {
 
 	@(DrawHint.StaticDraw)
 	@(BufferTarget.ArrayBuffer)
-	Vertex2f3f[] vertices;
-
-	@(DrawHint.StaticDraw)
-	@(BufferTarget.ElementArrayBuffer)
 	@VertexCountProvider
-	@TypeProvider
-	uint[] indices;
+	Vertex2f3f[] vertices;
+	
+	@(DrawHint.DynamicDraw)
+	@(BufferTarget.ArrayBuffer)
+	@VertexAttribDivisor(1) // changes EVERY FREHM!
+	@InstanceCountProvider
+	float[2][] offsets;
 
 } // VertexData
 
-// VAO TYPE YES
-alias ElementsVAO = VertexArrayT!VertexData;
+alias InstanceVao = VertexArrayT!VertexData;
 
 void main() {
 
@@ -89,35 +91,33 @@ void main() {
 
 	}
 
-	// compile ze shader 
-	TriangleShader triangle_shader;
-	auto shader_result = TriangleShader.compile(triangle_shader, &vs_shader, &fs_shader);
+	// load graphics and stuff
+	InstanceShader instance_shader;
+	auto shader_result = InstanceShader.compile(instance_shader, &vs_shader, &fs_shader);
 
 	// check validity
-	if (shader_result != TriangleShader.Error.Success) {
+	if (shader_result != InstanceShader.Error.Success) {
 		writefln("[MAIN] Shader compile failed, exiting!");
 		return; // exit now
 	}
 
-
-	// declare vbo data
-	Vertex2f3f[4] vertices = [
-		Vertex2f3f([-0.5f, -0.5f], [0.0f, 0.0f, 0.0f]), // top left
-		Vertex2f3f([0.5f, -0.5f], [1.0f, 0.0f, 0.0f]), // top right
-		Vertex2f3f([0.5f, 0.5f], [1.0f, 1.0f, 0.0f]), // bottom right
-		Vertex2f3f([-0.5f, 0.5f], [0.0f, 1.0f, 0.0f]), // bottom left
+	// declare static vertex data
+	Vertex2f3f[3] vertices = [
+		Vertex2f3f([0.0f, 0.25f], [1.0f, 0.0f, 0.0f]), // triangle top
+		Vertex2f3f([-0.25f, -0.25f], [0.0f, 1.0f, 0.0f]), // triangle left
+		Vertex2f3f([0.25f, -0.25f], [0.0f, 0.0f, 1.0f]) // triangle right
 	];
+	
+	float[2][40] instances;
+	foreach (i, ref e; instances) {
+		e = [-0.75f + (0.05f * i), -0.75f + (0.05f * i)];
+	}
+	
+	// package data
+	auto data = VertexData(vertices, instances);
 
-	// declare ebo data
-	uint[6] indices = [
-		0, 1, 2,
-		2, 3, 0
-	];
-
-	auto vertex_data = VertexData(vertices, indices);
-
-	// upload vertices and indices, get back vao to render with
-	auto vao = ElementsVAO.upload(vertex_data, DrawPrimitive.Triangles);
+	// now, upload all ze data
+	auto vao = InstanceVao.upload(data, DrawPrimitive.Triangles);
 
 	while (window.isAlive) {
 
@@ -134,7 +134,7 @@ void main() {
 
 		// cornflower blue, of course
 		Renderer.clearColour(0x428bca);
-		Renderer.draw(triangle_shader, vao, params);
+		Renderer.draw(instance_shader, vao, params);
 
 		window.present();
 

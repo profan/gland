@@ -61,7 +61,7 @@ private template siotaImpl(size_t to, size_t now) {
     }
 }
 
-T transpose(T)(ref T matrix) {
+T transpose(T)(auto ref T matrix) {
 
     auto new_matrix = matrix;
     alias dims = iota!(0, T.length);

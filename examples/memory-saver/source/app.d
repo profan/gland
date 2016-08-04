@@ -84,6 +84,7 @@ struct Vertex2f2f {
 
 } // Vertex2f2f
 
+@(DrawType.DrawArrays)
 struct TriangleData {
 
 	@(DrawHint.StaticDraw)
@@ -93,7 +94,7 @@ struct TriangleData {
 
 } // TriangleData
 
-alias TriangleVao = VertexArrayT!(TriangleData, DrawType.DrawArrays);
+alias TriangleVao = VertexArrayT!TriangleData;
 
 struct Vertex2f3f {
 
@@ -102,6 +103,7 @@ struct Vertex2f3f {
 
 } // Vertex2f3f
 
+@(DrawType.DrawArrays)
 struct FramebufferData {
 
 	@(DrawHint.StaticDraw)
@@ -111,7 +113,7 @@ struct FramebufferData {
 
 } // FramebufferData
 
-alias FrameVao = VertexArrayT!(FramebufferData, DrawType.DrawArrays);
+alias FrameVao = VertexArrayT!FramebufferData;
 
 void main() {
 

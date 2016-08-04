@@ -51,6 +51,7 @@ alias TextShader = Shader!(
 	], Mat4f[], "projection", float[4], "colour", Texture*, "tex"
 );
 
+@(DrawType.DrawArrays)
 struct TextData {
 
 	@(DrawHint.StaticDraw)
@@ -60,7 +61,7 @@ struct TextData {
 
 } // TextData
 
-alias TextVao = VertexArrayT!(TextData, DrawType.DrawArrays);
+alias TextVao = VertexArrayT!TextData;
 
 struct FontAtlas {
 
