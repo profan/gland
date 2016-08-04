@@ -972,6 +972,9 @@ struct VertexArrayT(VDataType) {
 	import std.meta : AliasSeq;
 	import std.traits : isInstanceOf, getUDAs;
 
+	// HACK: this is getting around the fact that i can't just get all members with a certain UDA for enum types, the concrete value
+	//  was in this case required, so it iterates over the enum's members and concatenates the results.
+	// One major problem with this approach is ordering of data, because the order of members matters.
 	alias All = CollectEnumMembers!(VDataType, DrawHint);
 	enum VboCount = All.length;
 

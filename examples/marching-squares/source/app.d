@@ -462,8 +462,8 @@ immutable char* ms_gs = "
 	void main() {
 
 		vec4 origin = gl_in[0].gl_Position;
-		vec2 coord = vec2(origin.x / 6.0, origin.y / 6.0);
-		float colour = texture2D(texture_map, coord).r;
+		ivec2 coord = ivec2(origin.xy);
+		float colour = texelFetch(texture_map, coord, 0).r;
 
 		gs_colour = vec3(colour, 0.0, 0.0);
 
@@ -494,7 +494,7 @@ immutable char* ms_gs = "
 		}*/
 
 		int result;
-		result |= int(texture2D(texture_map, coord).r);
+		result |= int(texelFetch(texture_map, coord, 0).r);;
 
 		outputSequence(origin, 15);
 
@@ -518,27 +518,33 @@ immutable char* ms_fs = "
 alias Vec2f = float[2];
 alias Mat4f = float[4][4];
 
-enum GridSize = 6;
+enum GridSize = 8;
 alias Height = ubyte;
 
 immutable Height[GridSize][GridSize] grid = [
 	[
-		5, 10, 10, 10, 10, 5
+		5, 10, 10, 10, 10, 10, 10, 5
 	],
 	[
-		10, 10, 15, 15, 10, 10
+		10, 10, 15, 15, 15, 15, 10, 10
 	],
 	[
-		10, 15, 15, 15, 15, 10
+		10, 15, 15, 15, 15, 15, 15, 10
 	],
 	[
-		10, 15, 15, 15, 15, 10
+		10, 15, 15, 15, 15, 15, 15, 10
 	],
 	[
-		10, 10, 15, 15, 10, 10
+		10, 15, 15, 15, 15, 15, 15, 10
 	],
 	[
-		5, 10, 10, 10, 10, 5
+		10, 15, 15, 15, 15, 15, 15, 10
+	],
+	[
+		10, 10, 15, 15, 15, 15, 10, 10
+	],
+	[
+		5, 10, 10, 10, 10, 10, 10, 5
 	]
 
 ];
@@ -561,14 +567,69 @@ struct MapData {
 
 alias MapVao = VertexArrayT!MapData;
 
+immutable char* ts_vs = "
+	#version 330 core
+
+	layout (location = 0) in vec2 position;
+	layout (location = 1) in vec2 uv;
+
+	out vec2 tex_coord;
+
+	void main() {
+		gl_Position = vec4(position - 0.5, 0.0, 1.0);
+		tex_coord = uv;
+	}
+";
+
+immutable char* ts_fs = "
+	#version 330 core
+
+	in vec2 tex_coord;
+
+	uniform sampler2D diffuse;
+
+	out vec4 f_colour;
+
+	void main() {
+		f_colour = vec4(texture2D(diffuse, tex_coord).r, 0.0, 0.0, 1.0);
+	}
+";
+
+alias TextureShader = Shader!(
+	[ShaderType.VertexShader, ShaderType.FragmentShader], [
+		AttribTuple("position", 0),
+		AttribTuple("uv", 1)
+	], Texture*, "diffuse"
+);
+
+struct Vertex2f2f {
+	float[2] position;
+	float[2] uv;
+} // Vertex2f2f
+
+@(DrawType.DrawArrays)
+struct VertexData {
+
+	@VertexCountProvider
+	@(BufferTarget.ArrayBuffer)
+	@(DrawHint.StaticDraw)
+	Vertex2f2f[] vertices;
+
+} // VertexData
+
+alias TextureVao = VertexArrayT!VertexData;
+
 Texture generateMapTexture(ref in Height[GridSize][GridSize] cells) {
 
 	TextureParams params = {
 		internal_format : InternalTextureFormat.R8,
 		pixel_format : PixelFormat.Red,
 		pack_alignment : PixelPack.One,
-		unpack_alignment : PixelPack.One
+		unpack_alignment : PixelPack.One,
+		wrapping : TextureWrapping.Repeat
 	};
+
+	writefln("data: %s", (cast(ubyte*)cells.ptr)[0..GridSize*GridSize]);
 
 	Texture new_texture;
 	auto texture_result = Texture.create(new_texture, cast(ubyte*)cells.ptr, GridSize, GridSize, params);
@@ -598,6 +659,23 @@ void main() {
 			break;
 
 	}
+
+	// texture shader stuff
+	TextureShader tex_shader;
+	auto tex_shader_result = TextureShader.compile(tex_shader, &ts_vs, &ts_fs);
+
+	// declare texture quad data
+	Vertex2f2f[6] vertices = [
+		Vertex2f2f([0.0f, 0.0f], [0.0f, 0.0f]), // top left
+		Vertex2f2f([1.0f, 0.0f], [1.0f, 0.0f]), // top right
+		Vertex2f2f([1.0f, 1.0f], [1.0f, 1.0f]), // bottom right
+		Vertex2f2f([0.0f, 0.0f], [0.0f, 0.0f]), // top left
+		Vertex2f2f([0.0f, 1.0f], [0.0f, 1.0f]), // bottom left
+		Vertex2f2f([1.0f, 1.0f], [1.0f, 1.0f]) // bottom right
+	];
+
+	auto vertex_data = VertexData(vertices);
+	auto tex_vao = TextureVao.upload(vertex_data, DrawPrimitive.Triangles);
 
 	// load graphics and stuff
 	MapShader map_shader;
@@ -640,7 +718,8 @@ void main() {
 
 		// cornflower blue, of course
 		Renderer.clearColour(0x428bca);
-		Renderer.draw(map_shader, vao, params, &map_texture);
+		//Renderer.draw(map_shader, vao, params, &map_texture);
+		Renderer.draw(tex_shader, tex_vao, params, &map_texture);
 
 		window.present();
 
