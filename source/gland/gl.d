@@ -680,6 +680,14 @@ struct Texture {
 
 	} // create
 
+	nothrow @nogc
+	void update(int x_offset, int y_offset, int width, int height, in void* bytes) {
+
+		Renderer.bindTexture(this.handle_, 0);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, x_offset, y_offset, width, height, this.pixel_format_, GL_UNSIGNED_BYTE, bytes);
+
+	} // update
+
 	@nogc nothrow
 	static OpaqueTexture fromId(GLuint id) {
 
@@ -1285,41 +1293,6 @@ template PODMembers(T) {
 /**
  * UFCS functions for drawing, uploading data, etc.
 */
-
-nothrow @nogc
-void update(ref Texture texture, int x_offset, int y_offset, int width, int height, in void* bytes) {
-
-	Renderer.bindTexture(texture.handle, 0);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, x_offset, y_offset, width, height, texture.pixel_format_, GL_UNSIGNED_BYTE, bytes);
-
-} // update
-
-nothrow @nogc
-void update(VertexType)(ref VertexArray!VertexType vao, in VertexType[] vertices, DrawHint draw_hint) {
-
-	Renderer.bindVertexArray(vao);
-	Renderer.bindBuffer(BufferTarget.ArrayBuffer, vao.vbo_);
-	glBufferData(GL_ARRAY_BUFFER, VertexType.sizeof * vertices.length, vertices.ptr, draw_hint);
-	vao.num_vertices_ = cast(uint)vertices.length;
-
-	foreach (i, m; PODMembers!VertexType) {
-
-		alias MemberType = typeof(__traits(getMember, VertexType, m));
-		enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
-		alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
-
-		glEnableVertexAttribArray(i);
-		glVertexAttribPointer(i,
-			MemberType.sizeof / ElementType.sizeof,
-			TypeToGL!ElementType,
-			GL_FALSE, // normalization
-			vertices[0].sizeof, // stride to jump
-			cast(const(void)*)MemberOffset
-		);
-
-	}
-
-} // update
 
 enum DrawType {
 
