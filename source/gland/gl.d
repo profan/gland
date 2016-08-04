@@ -1294,33 +1294,6 @@ void update(ref Texture texture, int x_offset, int y_offset, int width, int heig
 
 } // update
 
-nothrow @nogc
-void update(VertexType)(ref VertexArray!VertexType vao, in VertexType[] vertices, DrawHint draw_hint) {
-
-	Renderer.bindVertexArray(vao);
-	Renderer.bindBuffer(BufferTarget.ArrayBuffer, vao.vbo_);
-	glBufferData(GL_ARRAY_BUFFER, VertexType.sizeof * vertices.length, vertices.ptr, draw_hint);
-	vao.num_vertices_ = cast(uint)vertices.length;
-
-	foreach (i, m; PODMembers!VertexType) {
-
-		alias MemberType = typeof(__traits(getMember, VertexType, m));
-		enum MemberOffset = __traits(getMember, VertexType, m).offsetof;
-		alias ElementType =  typeof(__traits(getMember, VertexType, m)[0]);
-
-		glEnableVertexAttribArray(i);
-		glVertexAttribPointer(i,
-			MemberType.sizeof / ElementType.sizeof,
-			TypeToGL!ElementType,
-			GL_FALSE, // normalization
-			vertices[0].sizeof, // stride to jump
-			cast(const(void)*)MemberOffset
-		);
-
-	}
-
-} // update
-
 enum DrawType {
 
 	DrawArrays,
