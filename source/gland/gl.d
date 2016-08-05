@@ -1250,33 +1250,6 @@ struct VertexArrayT(VDataType) {
 
 } // VertexArrayT
 
-struct VertexArray(VT) {
-
-	private {
-
-		GLuint handle_;
-		GLuint vbo_; // TODO: this needs to go, codegen HO
-		DrawPrimitive type_;
-		uint num_vertices_;
-
-	}
-
-	@disable this(this);
-	@disable ref typeof(this) opAssign(ref typeof(this));
-
-	~this() {
-
-		glDeleteVertexArrays(1, &handle_);
-
-	} // ~this
-
-	@property
-	GLuint* handle() {
-		return &handle_;
-	} // handle
-
-} // VertexArray
-
 struct VertexBuffer(VT) {
 
 	private {
