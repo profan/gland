@@ -463,7 +463,7 @@ immutable char* ms_gs = "
 
 		vec4 origin = gl_in[0].gl_Position;
 		ivec2 coord = ivec2(origin.xy);
-		float colour = texelFetch(texture_map, coord, 0).r;
+		float colour = texelFetch(texture_map, coord, 0).r * 10;
 
 		gs_colour = vec3(colour, 0.0, 0.0);
 
@@ -479,24 +479,24 @@ immutable char* ms_gs = "
 			vec2(origin.x - 1, origin.y + 1) // below and to the left
 		);
 
-		int start_x = clamp(int(origin.x) - 1, 0, 6);
-		int start_y = clamp(int(origin.y) - 1, 0, 6);
-		int end_x = clamp(int(origin.x) + 1, 0, 6);
-		int end_y = clamp(int(origin.y) + 1, 0, 6);
+		int start_x = clamp(int(origin.x) - 1, 0, 8);
+		int start_y = clamp(int(origin.y) - 1, 0, 8);
+		int end_x = clamp(int(origin.x) + 1, 0, 8);
+		int end_y = clamp(int(origin.y) + 1, 0, 8);
 
-		/*
+		
 		int result;
 		for (int y = start_y; y < end_y; y++) {
 			for (int x = start_x; x < end_x; x++) {
-				int value = int(texture2D(texture_map, coord + vec2(x, y) / 6.0).r);
+				int value = int(texelFetch(texture_map, coord + ivec2(x, y), 0).r);
 				result |= value;
 			}
-		}*/
+		}
 
-		int result;
-		result |= int(texelFetch(texture_map, coord, 0).r);;
+		//int result;
+		//result |= int(texelFetch(texture_map, coord, 0).r);;
 
-		outputSequence(origin, 15);
+		outputSequence(vec4(origin.xy - vec2(1, -1), origin.zw), 15);
 
 	}
 
@@ -626,10 +626,9 @@ Texture generateMapTexture(ref in Height[GridSize][GridSize] cells) {
 		pixel_format : PixelFormat.Red,
 		pack_alignment : PixelPack.One,
 		unpack_alignment : PixelPack.One,
-		wrapping : TextureWrapping.Repeat
+		wrapping : TextureWrapping.Repeat,
+		mipmap_max_level : 0
 	};
-
-	writefln("data: %s", (cast(ubyte*)cells.ptr)[0..GridSize*GridSize]);
 
 	Texture new_texture;
 	auto texture_result = Texture.create(new_texture, cast(ubyte*)cells.ptr, GridSize, GridSize, params);
@@ -718,8 +717,8 @@ void main() {
 
 		// cornflower blue, of course
 		Renderer.clearColour(0x428bca);
-		//Renderer.draw(map_shader, vao, params, &map_texture);
-		Renderer.draw(tex_shader, tex_vao, params, &map_texture);
+		Renderer.draw(map_shader, vao, params, &map_texture);
+		//Renderer.draw(tex_shader, tex_vao, params, &map_texture);
 
 		window.present();
 

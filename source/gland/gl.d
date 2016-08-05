@@ -597,6 +597,12 @@ struct TextureParams {
 	PixelPack pack_alignment = PixelPack.Four;
 	PixelPack unpack_alignment = PixelPack.Four;
 
+	/* level of detail */
+	int min_lod, max_lod;
+
+	/* mipmapping level */
+	int mipmap_base_level, mipmap_max_level;
+
 } // TextureParams
 
 struct Texture {
@@ -658,6 +664,14 @@ struct Texture {
 		// linearly interpolate between pixels, MIN if texture is too small for drawing area, MAG if drawing area is smaller than texture
 		glTexParameterf(texture.texture_type_, GL_TEXTURE_MIN_FILTER, params.filtering);
 		glTexParameterf(texture.texture_type_, GL_TEXTURE_MAG_FILTER, params.filtering);
+
+		// mipmapping levels
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_BASE_LEVEL, params.mipmap_base_level);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_MAX_LEVEL, params.mipmap_max_level);
+
+		// level of detail
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_MIN_LOD, params.min_lod);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_MAX_LOD, params.max_lod);
 
 		// pixel pack and unpack alignment
 		glPixelStorei(GL_PACK_ALIGNMENT, params.pack_alignment);
