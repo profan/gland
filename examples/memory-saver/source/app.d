@@ -122,7 +122,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
-	auto device = Renderer.createDevice(window.width, window.height);
+	auto device = Renderer.createDevice(&window.width, &window.height);
 	Renderer.viewport_width_ = window.width;
 	Renderer.viewport_height_ = window.height;
 

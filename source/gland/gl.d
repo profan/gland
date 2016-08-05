@@ -1385,16 +1385,19 @@ struct RendererState {
 
 /* Functions for creating structures and such. */
 
-struct Device {
+alias DimFunction = int delegate() @nogc nothrow;
 
-	int width_;
-	int height_;
+struct Device {
+@nogc nothrow:
+
+	DimFunction width_fn_;
+	DimFunction height_fn_;
 
 	@nogc
 	nothrow
 	@property {
-		int width() { return width_; }
-		int height() { return height_; }
+		int width() { return width_fn_(); }
+		int height() { return height_fn_(); }
 	}
 
 } // Device
@@ -1414,16 +1417,13 @@ template isFramebuffer(T) {
 struct Renderer {
 static:
 
-	static Device createDevice(int w, int h) {
+	static Device createDevice(DimFunction w, DimFunction h) {
 		return typeof(return)(w, h);
 	} // createDevice
 
 	/**
-	 * viewport size
+	 * viewport size cache
 	*/
-
-	int viewport_width_;
-	int viewport_height_;
 
 	// cached here
 	int current_viewport_width_;
@@ -1473,67 +1473,38 @@ static:
 	*/
 
 	nothrow @nogc
-	void clearColour(GLint rgb) {
+	void clearColour(DeviceType)(ref DeviceType device, GLint rgb) 
+		if (isDevice!DeviceType) {
+
+		static if (isFramebuffer!DeviceType) { glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle); }
 
 		auto colour = to!GLColour(rgb);
 		glClearColor(colour[0], colour[1], colour[2], colour[3]);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	} // clearColour
-
-	nothrow @nogc
-	void clearColour(GLclampf r, GLclampf g, GLclampf b, GLclampf a = 255) {
-
-		glClearColor(r, g, b, a);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		static if (isFramebuffer!DeviceType) { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
 	} // clearColour
 
 	nothrow @nogc
-	void clearColour(ref SimpleFramebuffer buffer, GLint rgb) {
+	void draw(DeviceType, ShaderType, VertexArrayType, Args...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) 
+		if (isDevice!DeviceType) {
 
-		glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle);
-		Renderer.clearColour(rgb);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		setViewport(device.width, device.height);
 
-	} // clearColour
+		static if (isFramebuffer!DeviceType) {
 
-	nothrow @nogc
-	void draw(DeviceType, ShaderType, VertexArrayType, Args...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
+			glBindFramebuffer(GL_FRAMEBUFFER, device.handle);
+			Renderer.draw(shader, vao, params, args);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		static if (isDevice!DeviceType) {
+		} else {
 
-			setViewport(device.width, device.height);
-
-			static if (isFramebuffer!DeviceType) {
-
-				glBindFramebuffer(GL_FRAMEBUFFER, device.handle);
-				Renderer.draw(shader, vao, params, args);
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-			} else {
-
-				Renderer.draw(shader, vao, params, args);
-
-			}
+			Renderer.draw(shader, vao, params, args);
 
 		}
 
 	}
-
-	nothrow @nogc
-	void draw(ShaderType, VertexArrayType, Args...)(ref SimpleFramebuffer buffer, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
-
-		glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle);
-		setViewport(buffer.width, buffer.height);
-
-		Renderer.draw(shader, vao, params, args);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// reset here.. for now
-		setViewport(viewport_width_, viewport_height_);
-
-	} // draw
 
 	nothrow @nogc
 	void draw(ShaderType, VertexArrayType, Args...)(ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
