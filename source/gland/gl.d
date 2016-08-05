@@ -1325,18 +1325,6 @@ enum DrawType {
 
 } // DrawType
 
-struct Device {
-
-	int width_;
-	int height_;
-
-	@property {
-		int width() { return width_; }
-		int height() { return height_; }
-	}
-
-} // Device
-
 alias ScissorBox = Tuple!(int, "x", int, "y", uint, "w", uint, "h");
 
 mixin template RendererStateVars() {
@@ -1397,8 +1385,38 @@ struct RendererState {
 
 /* Functions for creating structures and such. */
 
+struct Device {
+
+	int width_;
+	int height_;
+
+	@nogc
+	nothrow
+	@property {
+		int width() { return width_; }
+		int height() { return height_; }
+	}
+
+} // Device
+
+template isDevice(T) {
+	enum isDevice = (is (T : Device) || is (T : SimpleFramebuffer));
+} // isDevice
+
+template isFramebuffer(T) {
+	static if (is (T : SimpleFramebuffer)) {
+		enum isFramebuffer = true;
+	} else {
+		enum isFramebuffer = false;
+	}
+} // isFramebuffer
+
 struct Renderer {
 static:
+
+	static Device createDevice(int w, int h) {
+		return typeof(return)(w, h);
+	} // createDevice
 
 	/**
 	 * viewport size
@@ -1479,6 +1497,29 @@ static:
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	} // clearColour
+
+	nothrow @nogc
+	void draw(DeviceType, ShaderType, VertexArrayType, Args...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
+
+		static if (isDevice!DeviceType) {
+
+			setViewport(device.width, device.height);
+
+			static if (isFramebuffer!DeviceType) {
+
+				glBindFramebuffer(GL_FRAMEBUFFER, device.handle);
+				Renderer.draw(shader, vao, params, args);
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+			} else {
+
+				Renderer.draw(shader, vao, params, args);
+
+			}
+
+		}
+
+	}
 
 	nothrow @nogc
 	void draw(ShaderType, VertexArrayType, Args...)(ref SimpleFramebuffer buffer, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {

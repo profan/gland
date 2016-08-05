@@ -122,6 +122,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
+	auto device = Renderer.createDevice(window.width, window.height);
 	Renderer.viewport_width_ = window.width;
 	Renderer.viewport_height_ = window.height;
 
@@ -230,7 +231,7 @@ void main() {
 		Renderer.draw(frame_buffer, triangle_shader, vao, params, [cast(float[4][4])transform.transform.ptr[0..16]]);
 
 		// now render given texture, woo!
-		Renderer.draw(texture_shader, rect_vao, params, &framebuffer_texture);
+		Renderer.draw(device, texture_shader, rect_vao, params, &framebuffer_texture);
 
 
 		window.present();
