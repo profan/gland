@@ -215,6 +215,13 @@ enum BlendFunc {
 
 } // BlendFunc
 
+enum ShadingType {
+
+	Smooth = GL_SMOOTH,
+	Flat = GL_FLAT
+
+} // ShadingType
+
 // DrawParams state, is sent with every "draw" command in order to *never* have any manual state modification.
 struct DrawParams {
 
@@ -1376,6 +1383,9 @@ mixin template RendererStateVars() {
 	//GL_MULTISAMPLE
 	// ... TODO
 
+	//GL_SHADE_MODEL
+	ShadingType shading_type;
+
 }
 
 /* OpenGL state which can be set with glEnable/glDisable */
@@ -1618,9 +1628,15 @@ static:
 		setState(GL_STENCIL_TEST, params.state.stencil_test);
 		setState(GL_SCISSOR_TEST, params.state.scissor_test);
 
+		/* TODO: move the below somewhere more sane. */
 		if (scissor_test) {
 			scissor_box = params.state.scissor_box;
 			glScissor(scissor_box.expand);
+		}
+
+		if (shading_type != params.state.shading_type) {
+			glShadeModel(shading_type);
+			shading_type = params.state.shading_type;
 		}
 
 		// blendaroni, TODO check if already set
