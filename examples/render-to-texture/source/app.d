@@ -145,7 +145,10 @@ void main() {
 
 	// create texture to render to
 	Texture framebuffer_texture;
-	TextureParams tex_params = {};
+	TextureParams tex_params = {
+		internal_format : InternalTextureFormat.RGB,
+		pixel_format : PixelFormat.RGB
+	};
 	auto texture_result = Texture.create(framebuffer_texture, null, texture_w, texture_h, tex_params);
 	
 	// create a frame buffer from this texture
