@@ -1638,12 +1638,16 @@ static:
 
 		static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
 			glDrawArrays(vao.type_, cast(int)offset, vertex_count);
+
 		} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
 			glDrawArraysInstanced(vao.type_, cast(int)offset, vertex_count, vao.num_instances_);
+
 		} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
 			glDrawElements(vao.type_, vertex_count, vao.draw_type_, offset);
+
 		} else static if (VertexArrayType.DrawFunction == DrawType.DrawElementsInstanced) {
 			glDrawElementsInstanced(vao.type_, vao.num_vertices_, vao.draw_type_, 0);
+
 		}
 
 	} // draw
