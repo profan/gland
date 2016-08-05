@@ -484,7 +484,7 @@ immutable char* ms_gs = "
 		int end_x = clamp(int(origin.x) + 1, 0, 8);
 		int end_y = clamp(int(origin.y) + 1, 0, 8);
 
-		
+		/*
 		int result;
 		for (int y = start_y; y < end_y; y++) {
 			for (int x = start_x; x < end_x; x++) {
@@ -492,11 +492,13 @@ immutable char* ms_gs = "
 				result |= value;
 			}
 		}
+		*/
 
 		//int result;
-		//result |= int(texelFetch(texture_map, coord, 0).r);;
+		//result += int(texelFetch(texture_map, coord, 0).r);
 
-		outputSequence(vec4(origin.xy - vec2(1, -1), origin.zw), 15);
+		//vec4 actual_origin = vec4(origin.xy - vec2(2, 1), origin.zw);
+		outputSequence(origin, 15);
 
 	}
 
@@ -510,7 +512,6 @@ immutable char* ms_fs = "
 	out vec3 f_colour;
 
 	void main() {
-		//f_colour = vec3(1.0, 0.0, 0.0);
 		f_colour = gs_colour;
 	}
 ";
@@ -576,7 +577,7 @@ immutable char* ts_vs = "
 	out vec2 tex_coord;
 
 	void main() {
-		gl_Position = vec4(position - 0.5, 0.0, 1.0);
+		gl_Position = vec4(position, 0.0, 1.0);
 		tex_coord = uv;
 	}
 ";
@@ -659,17 +660,31 @@ void main() {
 
 	}
 
+	// framebuffer texture
+	Texture fb_texture;
+	TextureParams params = {
+		internal_format : InternalTextureFormat.RGB,
+		pixel_format : PixelFormat.RGB
+	};
+	auto fb_tex_result = Texture.create(fb_texture, null, window.width, window.height, params);
+
+	// create fb with texture	
+	SimpleFramebuffer sfb;
+	auto sfb_result = fb_texture.asSurface(sfb, false);
+
 	// texture shader stuff
 	TextureShader tex_shader;
 	auto tex_shader_result = TextureShader.compile(tex_shader, &ts_vs, &ts_fs);
 
+	int w = window.width;
+	int h = window.height;
 	// declare texture quad data
 	Vertex2f2f[6] vertices = [
-		Vertex2f2f([0.0f, 0.0f], [0.0f, 0.0f]), // top left
-		Vertex2f2f([1.0f, 0.0f], [1.0f, 0.0f]), // top right
+		Vertex2f2f([-1.0, -1.0f], [0.0f, 0.0f]), // top left
+		Vertex2f2f([1.0f, -1.0f], [1.0f, 0.0f]), // top right
 		Vertex2f2f([1.0f, 1.0f], [1.0f, 1.0f]), // bottom right
-		Vertex2f2f([0.0f, 0.0f], [0.0f, 0.0f]), // top left
-		Vertex2f2f([0.0f, 1.0f], [0.0f, 1.0f]), // bottom left
+		Vertex2f2f([-1.0f, -1.0f], [0.0f, 0.0f]), // top left
+		Vertex2f2f([-1.0f, 1.0f], [0.0f, 1.0f]), // bottom left
 		Vertex2f2f([1.0f, 1.0f], [1.0f, 1.0f]) // bottom right
 	];
 
@@ -695,12 +710,17 @@ void main() {
 			grid_positions[y][x] = [cur_x++, cur_y];
 		}
 		cur_y++;
+		cur_x = 0;
 	}
 
 	auto map_data = MapData(cast(Vec2f[])grid_positions);
 
 	// now, upload vertices
 	auto vao = MapVao.upload(map_data, DrawPrimitive.Points);
+
+	// set up projection
+	Mat4f projection = orthographic(0.0f, window.width, window.height, 0.0f, 0.0f, 1.0f);
+	auto transposed_projection = transpose(projection);
 
 	while (window.isAlive) {
 
@@ -713,12 +733,13 @@ void main() {
 		}
 
 		// default state, holds all OpenGL state params like blend state etc to be use for given draw call
-		DrawParams params = {};
+		DrawParams draw_params = {};
+
+		Renderer.clearColour(sfb, 0xffa500);
+		Renderer.draw(sfb, map_shader, vao, draw_params, &map_texture);
 
 		// cornflower blue, of course
-		Renderer.clearColour(0x428bca);
-		Renderer.draw(map_shader, vao, params, &map_texture);
-		//Renderer.draw(tex_shader, tex_vao, params, &map_texture);
+		Renderer.draw(tex_shader, tex_vao, draw_params, &fb_texture);
 
 		window.present();
 
