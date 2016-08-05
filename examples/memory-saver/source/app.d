@@ -226,10 +226,10 @@ void main() {
 		transform.rotation.z += 0.01;
 
 		// render to texture, also clear with ze blau
-		Renderer.draw(frame_buffer, triangle_shader, vao, params, [cast(float[4][4])transform.transform.ptr[0..16]]);
+		frame_buffer.draw(triangle_shader, vao, params, [cast(float[4][4])transform.transform.ptr[0..16]]);
 
 		// now render given texture, woo!
-		Renderer.draw(device, texture_shader, rect_vao, params, &framebuffer_texture);
+		device.draw(texture_shader, rect_vao, params, &framebuffer_texture);
 
 
 		window.present();

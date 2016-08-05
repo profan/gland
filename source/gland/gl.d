@@ -1445,212 +1445,6 @@ static:
 	 * Functions, this is the public API
 	*/
 
-	nothrow @nogc
-	void clearColour(DeviceType)(ref DeviceType device, GLint rgb) 
-		if (isDevice!DeviceType) {
-
-		static if (isFramebuffer!DeviceType) { glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle); }
-
-		auto colour = to!GLColour(rgb);
-		glClearColor(colour[0], colour[1], colour[2], colour[3]);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		static if (isFramebuffer!DeviceType) { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
-
-	} // clearColour
-
-	nothrow @nogc
-	void draw(DeviceType, ShaderType, VertexArrayType, Args...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) 
-		if (isDevice!DeviceType) {
-
-		setViewport(device.width, device.height);
-
-		static if (isFramebuffer!DeviceType) {
-
-			glBindFramebuffer(GL_FRAMEBUFFER, device.handle);
-			Renderer.draw(shader, vao, params, args);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		} else {
-
-			Renderer.draw(shader, vao, params, args);
-
-		}
-
-	}
-
-	nothrow @nogc
-	void draw(ShaderType, VertexArrayType, Args...)(ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
-		draw_with_offset(shader, vao, params, cast(uint)vao.num_vertices_, cast(ushort*)0, args);
-	} // draw
-
-	nothrow @nogc
-	void draw_with_offset(ShaderType, VertexArrayType, Args...)(ref ShaderType shader, ref VertexArrayType vao, DrawParams params, uint vertex_count, ushort* offset, Args args) {
-
-		import std.string : format;
-
-		// type checking args
-		static assert(args.length == ShaderType.Bindings.length/2,
-			"length of args passed doesn't match length of ShaderType bindings!");
-
-		foreach (i, arg; Args) {
-			static if (i % 2 != 0) {
-				continue;
-			} else { // TODO: look at this.. :I
-				//static assert(is (arg : ShaderType.Bindings[i]),
-				//	"input type: %s does not match binding type: %s!".format(arg.stringof, ShaderType.Bindings[i].stringof));
-			}
-		}
-
-		Renderer.bindVertexArray(vao);
-		Renderer.useProgram(shader.handle);
-		uint current_texture = 0;
-
-		foreach (i, T; Args) with (shader) {
-
-			/**
-			 * Vectors
-			*/
-
-			static if (is (T : float)) {
-				glUniform1f(uniforms_[i], args[i]);
-			} else static if (is (T : float[2])) {
-				glUniform2f(uniforms_[i], args[i][0], args[i][1]);
-			} else static if (is (T : float[3])) {
-				glUniform3f(uniforms_[i], args[i][0], args[i][1], args[i][2]);
-			} else static if (is (T : float[4])) {
-				glUniform4f(uniforms_[i], args[i][0], args[i][1], args[i][2], args[i][3]);
-
-			} else static if (is (T : uint)) {
-				glUniform1ui(uniforms_[i], args[i]);
-			} else static if (is (T : uint[2])) {
-				glUniform2ui(uniforms_[i], args[i][0], args[i][1]);
-			} else static if (is (T : uint[3])) {
-				glUniform3ui(uniforms_[i], args[i][0], args[i][1], args[i][2]);
-			} else static if (is (T : uint[4])) {
-				glUniform4ui(uniforms_[i], args[i][0], args[i][1], args[i][2], args[i][3]);
-
-			} else static if (is (T : int)) {
-				glUniform1i(uniforms_[i], args[i]);
-			} else static if (is (T : int[2])) {
-				glUniform2i(uniforms_[i], args[i][0], args[i][1]);
-			} else static if (is (T : int[3])) {
-				glUniform3i(uniforms_[i], args[i][0], args[i][1], args[i][2]);
-			} else static if (is (T : int[4])) {
-				glUniform4i(uniforms_[i], args[i][0], args[i][1], args[i][2], args[i][3]);
-
-			} else static if (is (T : float[1][])) {
-				glUniform1fv(uniforms_[i], args[i].length, cast(float*)args[i].ptr);
-			} else static if (is (T : float[2][])) {
-				glUniform2fv(uniforms_[i], args[i].length, cast(float*)args[i].ptr);
-			} else static if (is (T : float[3][])) {
-				glUniform3fv(uniforms_[i], args[i].length, cast(float*)args[i].ptr);
-			} else static if (is (T : float[4][])) {
-				glUniform4fv(uniforms_[i], args[i].length, cast(float*)args[i].ptr);
-
-			} else static if (is (T : uint[1][])) {
-				glUniform1uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
-			} else static if (is (T : uint[2][])) {
-				glUniform2uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
-			} else static if (is (T : uint[3][])) {
-				glUniform3uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
-			} else static if (is (T : uint[4][])) {
-				glUniform4uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
-
-			} else static if (is (T : int[1][])) {
-				glUniform1iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
-			} else static if (is (T : int[2][])) {
-				glUniform2iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
-			} else static if (is (T : int[3][])) {
-				glUniform3iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
-			} else static if (is (T : int[4][])) {
-				glUniform4iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
-
-			/**
-			 * Matrices
-			*/
-
-			} else static if (is (T : float[2][2][])) {
-				glUniformMatrix2fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
-			} else static if (is (T : float[3][3][])) {
-				glUniformMatrix3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
-			} else static if (is (T : float[4][4][])) {
-				glUniformMatrix4fv(uniforms_[i], cast(int)args[i].length, GL_FALSE, cast(float*)args[i].ptr);
-
-			} else static if (is (T : float[2][3][])) {
-				glUniformMatrix2x3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
-			} else static if (is (T : float[3][2][])) {
-				glUniformMatrix3x2fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
-			} else static if (is (T : float[2][4][])) {
-				glUniformMatrix2x4fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
-			} else static if (is (T : float[4][2][])) {
-				glUniformMatrix4x2fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
-			} else static if (is (T : float[3][4][])) {
-				glUniformMatrix3x4fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
-			} else static if (is (T : float[4][3][])) {
-				glUniformMatrix4x3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
-
-			/**
-			 * Textures
-			*/
-
-			} else static if (is (T : Texture*) || is(T : OpaqueTexture*)) {
-
-				// currently just a single bind, think about this later
-				Renderer.bindTexture(args[i].handle, current_texture++);
-
-			}
-
-		}
-
-		/**
-		 * TODO: make this less ugly
-		*/
-
-		setState(GL_BLEND, params.state.blend_test);
-		setState(GL_CULL_FACE, params.state.cull_face);
-		setState(GL_DEPTH_TEST, params.state.depth_test);
-		setState(GL_STENCIL_TEST, params.state.stencil_test);
-		setState(GL_SCISSOR_TEST, params.state.scissor_test);
-
-		/* TODO: move the below somewhere more sane. */
-		if (scissor_test) {
-			scissor_box = params.state.scissor_box;
-			glScissor(scissor_box.expand);
-		}
-
-		if (shading_type != params.state.shading_type) {
-			glShadeModel(shading_type);
-			shading_type = params.state.shading_type;
-		}
-
-		// blendaroni, TODO check if already set
-		if (blend_test && (blend_eq != params.blend_eq || blend_src != params.blend_src || blend_dst != params.blend_dst)) {
-
-			glBlendEquation(params.blend_eq);
-			glBlendFunc(params.blend_src, params.blend_dst);
-
-			blend_src = params.blend_src;
-			blend_dst = params.blend_dst;
-			blend_eq = params.blend_eq;
-
-		}
-
-		static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
-			glDrawArrays(vao.type_, cast(int)offset, vertex_count);
-
-		} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
-			glDrawArraysInstanced(vao.type_, cast(int)offset, vertex_count, vao.num_instances_);
-
-		} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
-			glDrawElements(vao.type_, vertex_count, vao.draw_type_, offset);
-
-		} else static if (VertexArrayType.DrawFunction == DrawType.DrawElementsInstanced) {
-			glDrawElementsInstanced(vao.type_, vao.num_vertices_, vao.draw_type_, 0);
-
-		}
-
-	} // draw
 
 private:
 
@@ -1855,3 +1649,209 @@ private:
 	} // bufferData
 
 } // Renderer
+
+nothrow @nogc
+void clearColour(DeviceType)(ref DeviceType device, GLint rgb)
+	if (isDevice!DeviceType) {
+
+	static if (isFramebuffer!DeviceType) { glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle); }
+
+	auto colour = to!GLColour(rgb);
+	glClearColor(colour[0], colour[1], colour[2], colour[3]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	static if (isFramebuffer!DeviceType) { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
+
+} // clearColour
+
+nothrow @nogc
+void draw(DeviceType, ShaderType, VertexArrayType, Args...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args)
+	if (isDevice!DeviceType) {
+
+	Renderer.setViewport(device.width, device.height);
+
+	static if (isFramebuffer!DeviceType) {
+
+		glBindFramebuffer(GL_FRAMEBUFFER, device.handle);
+		draw(shader, vao, params, args);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	} else {
+
+		draw(shader, vao, params, args);
+
+	}
+
+}
+
+nothrow @nogc
+void draw(ShaderType, VertexArrayType, Args...)(ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args) {
+	draw_with_offset(shader, vao, params, cast(uint)vao.num_vertices_, cast(ushort*)0, args);
+} // draw
+
+nothrow @nogc
+void draw_with_offset(ShaderType, VertexArrayType, Args...)(ref ShaderType shader, ref VertexArrayType vao, DrawParams params, uint vertex_count, ushort* offset, Args args) {
+
+	import std.string : format;
+
+	// type checking args
+	static assert(args.length == ShaderType.Bindings.length/2,
+		"length of args passed doesn't match length of ShaderType bindings!");
+
+	foreach (i, arg; Args) {
+		static if (i % 2 != 0) {
+			continue;
+		} else { // TODO: look at this.. :I
+			//static assert(is (arg : ShaderType.Bindings[i]),
+			//	"input type: %s does not match binding type: %s!".format(arg.stringof, ShaderType.Bindings[i].stringof));
+		}
+	}
+
+	Renderer.bindVertexArray(vao);
+	Renderer.useProgram(shader.handle);
+	uint current_texture = 0;
+
+	foreach (i, T; Args) with (shader) {
+
+		/**
+		 * Vectors
+		*/
+
+		static if (is (T : float)) {
+			glUniform1f(uniforms_[i], args[i]);
+		} else static if (is (T : float[2])) {
+			glUniform2f(uniforms_[i], args[i][0], args[i][1]);
+		} else static if (is (T : float[3])) {
+			glUniform3f(uniforms_[i], args[i][0], args[i][1], args[i][2]);
+		} else static if (is (T : float[4])) {
+			glUniform4f(uniforms_[i], args[i][0], args[i][1], args[i][2], args[i][3]);
+
+		} else static if (is (T : uint)) {
+			glUniform1ui(uniforms_[i], args[i]);
+		} else static if (is (T : uint[2])) {
+			glUniform2ui(uniforms_[i], args[i][0], args[i][1]);
+		} else static if (is (T : uint[3])) {
+			glUniform3ui(uniforms_[i], args[i][0], args[i][1], args[i][2]);
+		} else static if (is (T : uint[4])) {
+			glUniform4ui(uniforms_[i], args[i][0], args[i][1], args[i][2], args[i][3]);
+
+		} else static if (is (T : int)) {
+			glUniform1i(uniforms_[i], args[i]);
+		} else static if (is (T : int[2])) {
+			glUniform2i(uniforms_[i], args[i][0], args[i][1]);
+		} else static if (is (T : int[3])) {
+			glUniform3i(uniforms_[i], args[i][0], args[i][1], args[i][2]);
+		} else static if (is (T : int[4])) {
+			glUniform4i(uniforms_[i], args[i][0], args[i][1], args[i][2], args[i][3]);
+
+		} else static if (is (T : float[1][])) {
+			glUniform1fv(uniforms_[i], args[i].length, cast(float*)args[i].ptr);
+		} else static if (is (T : float[2][])) {
+			glUniform2fv(uniforms_[i], args[i].length, cast(float*)args[i].ptr);
+		} else static if (is (T : float[3][])) {
+			glUniform3fv(uniforms_[i], args[i].length, cast(float*)args[i].ptr);
+		} else static if (is (T : float[4][])) {
+			glUniform4fv(uniforms_[i], args[i].length, cast(float*)args[i].ptr);
+
+		} else static if (is (T : uint[1][])) {
+			glUniform1uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
+		} else static if (is (T : uint[2][])) {
+			glUniform2uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
+		} else static if (is (T : uint[3][])) {
+			glUniform3uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
+		} else static if (is (T : uint[4][])) {
+			glUniform4uiv(uniforms_[i], args[i].length, cast(uint*)args[i].ptr);
+
+		} else static if (is (T : int[1][])) {
+			glUniform1iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
+		} else static if (is (T : int[2][])) {
+			glUniform2iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
+		} else static if (is (T : int[3][])) {
+			glUniform3iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
+		} else static if (is (T : int[4][])) {
+			glUniform4iv(uniforms_[i], args[i].length, cast(int*)args[i].ptr);
+
+		/**
+		 * Matrices
+		*/
+
+		} else static if (is (T : float[2][2][])) {
+			glUniformMatrix2fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+		} else static if (is (T : float[3][3][])) {
+			glUniformMatrix3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+		} else static if (is (T : float[4][4][])) {
+			glUniformMatrix4fv(uniforms_[i], cast(int)args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+
+		} else static if (is (T : float[2][3][])) {
+			glUniformMatrix2x3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+		} else static if (is (T : float[3][2][])) {
+			glUniformMatrix3x2fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+		} else static if (is (T : float[2][4][])) {
+			glUniformMatrix2x4fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+		} else static if (is (T : float[4][2][])) {
+			glUniformMatrix4x2fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+		} else static if (is (T : float[3][4][])) {
+			glUniformMatrix3x4fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+		} else static if (is (T : float[4][3][])) {
+			glUniformMatrix4x3fv(uniforms_[i], args[i].length, GL_FALSE, cast(float*)args[i].ptr);
+
+		/**
+		 * Textures
+		*/
+
+		} else static if (is (T : Texture*) || is(T : OpaqueTexture*)) {
+
+			// currently just a single bind, think about this later
+			Renderer.bindTexture(args[i].handle, current_texture++);
+
+		}
+
+	}
+
+	/**
+	 * TODO: make this less ugly
+	*/
+
+	Renderer.setState(GL_BLEND, params.state.blend_test);
+	Renderer.setState(GL_CULL_FACE, params.state.cull_face);
+	Renderer.setState(GL_DEPTH_TEST, params.state.depth_test);
+	Renderer.setState(GL_STENCIL_TEST, params.state.stencil_test);
+	Renderer.setState(GL_SCISSOR_TEST, params.state.scissor_test);
+
+	/* TODO: move the below somewhere more sane. */
+	if (Renderer.scissor_test) {
+		Renderer.scissor_box = params.state.scissor_box;
+		glScissor(Renderer.scissor_box.expand);
+	}
+
+	if (Renderer.shading_type != params.state.shading_type) {
+		glShadeModel(Renderer.shading_type);
+		Renderer.shading_type = params.state.shading_type;
+	}
+
+	// blendaroni, TODO check if already set
+	if (Renderer.blend_test && (Renderer.blend_eq != params.blend_eq || Renderer.blend_src != params.blend_src || Renderer.blend_dst != params.blend_dst)) {
+
+		glBlendEquation(params.blend_eq);
+		glBlendFunc(params.blend_src, params.blend_dst);
+
+		Renderer.blend_src = params.blend_src;
+		Renderer.blend_dst = params.blend_dst;
+		Renderer.blend_eq = params.blend_eq;
+
+	}
+
+	static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
+		glDrawArrays(vao.type_, cast(int)offset, vertex_count);
+
+	} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
+		glDrawArraysInstanced(vao.type_, cast(int)offset, vertex_count, vao.num_instances_);
+
+	} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
+		glDrawElements(vao.type_, vertex_count, vao.draw_type_, offset);
+
+	} else static if (VertexArrayType.DrawFunction == DrawType.DrawElementsInstanced) {
+		glDrawElementsInstanced(vao.type_, vao.num_vertices_, vao.draw_type_, 0);
+	}
+
+} // draw
