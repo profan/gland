@@ -1742,7 +1742,9 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 	Renderer.bindVertexArray(vao);
 	Renderer.useProgram(shader.handle);
 
-	static assert(UniformTypes.length == 0 || is(UniformTypes[0] == ShaderType.UniformStruct));
+	static assert(!__traits(compiles, ShaderType.UniformStruct) && UniformTypes.length == 0
+			|| is(UniformTypes[0] == ShaderType.UniformStruct),
+			"uniform struct was either omitted on draw call or added when unnecessary!");
 
 	static if (UniformTypes.length == 1)
 	foreach (i, m; PODMembers!(UniformTypes[0])) with (shader) {
