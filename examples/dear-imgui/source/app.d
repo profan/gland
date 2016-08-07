@@ -59,12 +59,21 @@ immutable char* fs_source = "
 	}
 ";
 
+struct ImguiUniform {
+
+	float[4][4][] ProjMtx;
+
+	@TextureUnit(0)
+	OpaqueTexture* texture;
+
+} // ImguiUniform
+
 alias ImguiShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("Position", 0),
 		AttribTuple("UV", 1),
 		AttribTuple("Color", 2)
-	], float[4][4][], "ProjMtx", Texture*, "Texture"
+	], ImguiUniform
 );
 
 struct ImVert {
@@ -313,7 +322,8 @@ struct ImguiContext {
 			
 					// temporary opaque texture
 					OpaqueTexture cur_texture = Texture.fromId(cast(uint)pcmd.TextureId);
-					(*device_).draw_offset(shader_, vao_, draw_params, pcmd.ElemCount, idx_buffer_offset, proj_data[], &cur_texture);
+					auto uniform_data = ImguiUniform(proj_data[], &cur_texture);
+					(*device_).draw_offset(shader_, vao_, draw_params, pcmd.ElemCount, idx_buffer_offset, uniform_data);
 					
 				}
 				

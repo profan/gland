@@ -45,10 +45,20 @@ struct Vertex4f {
 	alias coord this;
 } // Vertex4f
 
+struct TextUniform {
+
+	Mat4f[] projection;
+	float[4] colour;
+
+	@TextureUnit(0)
+	Texture* tex;
+
+} // TextUniform
+
 alias TextShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("coord", 0)
-	], Mat4f[], "projection", float[4], "colour", Texture*, "tex"
+	], TextUniform
 );
 
 @(DrawType.DrawArrays)
@@ -290,7 +300,8 @@ struct FontAtlas {
 		TextVao.update(vertices_, new_coords, DrawPrimitive.Triangles);
 		
 		// do the drawings
-		device.draw(shader_, vertices_, params, projection_data, to!GLColour(colour), &texture_);
+		auto text_uniform = TextUniform(projection_data, to!GLColour(colour), &texture_);
+		device.draw(shader_, vertices_, params, text_uniform);
 
 	} // renderText
 

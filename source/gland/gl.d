@@ -1843,7 +1843,7 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 
 			// currently just a single bind, think about this later
 			alias texture_units = getUDAs!(__traits(getMember, uniforms[0], m), TextureUnit_);
-			assert(texture_units.length == 1);
+			static assert(texture_units.length == 1, "expected exactly one @TextureUnit UDA on Texture type!");
 
 			Renderer.bindTexture(__traits(getMember, uniforms[0], m).handle, texture_units[0].unit);
 
