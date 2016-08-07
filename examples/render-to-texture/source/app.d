@@ -122,8 +122,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
-	Renderer.viewport_width_ = window.width;
-	Renderer.viewport_height_ = window.height;
+	auto device = Renderer.createDevice(&window.width, &window.height);
 
 	final switch (result) with (Window.Error) {
 
@@ -215,10 +214,10 @@ void main() {
 		DrawParams params = {};
 
 		// render to texture, also clear with ze blau
-		Renderer.draw(frame_buffer, triangle_shader, vao, params);
+		frame_buffer.draw(triangle_shader, vao, params);
 
 		// now render given texture, woo!
-		Renderer.draw(texture_shader, rect_vao, params, &framebuffer_texture);
+		device.draw(texture_shader, rect_vao, params, &framebuffer_texture);
 
 		window.present();
 

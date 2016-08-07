@@ -72,6 +72,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
+	auto device = Renderer.createDevice(&window.width, &window.height);
 
 	final switch (result) with (Window.Error) {
 
@@ -154,10 +155,10 @@ void main() {
 		DrawParams params = {};
 
 		// cornflower blue, of course
-		Renderer.clearColour(0x428bca);
+		device.clearColour(0x428bca);
 
 		float[2] offset = [-0.5, -0.5];
-		Renderer.draw(texture_shader, vao, params, offset, &texture);
+		device.draw(texture_shader, vao, params, offset, &texture);
 
 		window.present();
 

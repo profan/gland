@@ -6,7 +6,7 @@ import gfm.math;
 
 import gland.win;
 
-//OpenGL maths related
+// OpenGL maths related
 alias Vec2i = Vector!(int, 2);
 alias Vec2f = Vector!(float, 2);
 alias Vec3f = Vector!(float, 3);
@@ -21,31 +21,7 @@ float distance2D(float x1, float y1, float x2, float y2) {
 
 T normalize(T)(T val, T min, T max, T val_max) {
 	return (min + val) / (val_max / (max - min));
-} //normalize
-
-/**
- * Takes a mouse position, and grades each component (R, G, B) as 0 to 255 depending on
- *  the direction from top left to top right for R, the direction from top left to bottom right for G,
- *  and the distance from the top left to the bottom left for B.
- * Returns the calculated RGB value.
-*/
-float[3] posToColour(ref Window win, int m_x, int m_y) {
-
-	float w = win.width, h = win.height;
-	float r_dist = distance2D(w, 0, m_x, m_y);
-	float g_dist = distance2D(w, h, m_x, m_y);
-	float b_dist = distance2D(0, h, m_x, m_y);
-
-	float corner_dist = distance2D(w, h, 0.0, 0.0);
-	float furthest_corner = max(w, corner_dist, h);
-
-	float r = normalize(r_dist, 0.0, 1.0, furthest_corner);
-	float g = normalize(g_dist, 0.0, 1.0, furthest_corner);
-	float b = normalize(b_dist, 0.0, 1.0, furthest_corner);
-
-	return [r, g, b];
-
-} // posToColour
+} // normalize
 
 template iota(size_t from, size_t to)
 if (from <= to) {
@@ -119,7 +95,7 @@ struct Transform {
 		this.rotation = rotation;
 		this.scale = scale;
 		this.origin = Vec3f(0.0f, 0.0f, 0.0f);
-	} //this
+	} // this
 
 	@property Mat4f transform() const nothrow @nogc {
 
@@ -135,9 +111,9 @@ struct Transform {
 
 		return posMatrix * rotMatrix * originMatrix * scaleMatrix;
 
-	} //transform
+	} // transform
 
-} //Transform
+} // Transform
 
 struct Obj {
 

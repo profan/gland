@@ -231,7 +231,8 @@ struct FontAtlas {
 
 	} // create
 
-	void renderText(Mat4f[] projection_data, in char[] text, float x, float y, float sx, float sy, int colour) {
+	void renderText(DeviceType)(ref DeviceType device, Mat4f[] projection_data, in char[] text, float x, float y, float sx, float sy, int colour) 
+		if (isDevice!DeviceType) {
 
 		import core.stdc.stdlib : malloc, free;
 		Vertex4f[] coords = (cast(Vertex4f*)malloc(Vertex4f.sizeof * (text.length * 6)))[0..text.length*6];
@@ -289,7 +290,7 @@ struct FontAtlas {
 		TextVao.update(vertices_, new_coords, DrawPrimitive.Triangles);
 		
 		// do the drawings
-		Renderer.draw(shader_, vertices_, params, projection_data, to!GLColour(colour), &texture_);
+		device.draw(shader_, vertices_, params, projection_data, to!GLColour(colour), &texture_);
 
 	} // renderText
 
@@ -304,6 +305,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
+	auto device = Renderer.createDevice(&window.width, &window.height);
 
 	final switch (result) with (Window.Error) {
 
@@ -358,10 +360,10 @@ void main() {
 		}
 
 		// cornflower blue, of course
-		Renderer.clearColour(0x428bca);
+		device.clearColour(0x428bca);
 		
 		Mat4f[1] projection_data = [transposed_projection];
-		text_atlas.renderText(projection_data[], "Hello, World!", window.width / 4, window.height / 2, 1.0f, 1.0f, 0xffa500);
+		text_atlas.renderText(device, projection_data[], "Hello, World!", window.width / 4, window.height / 2, 1.0f, 1.0f, 0xffa500);
 
 		window.present();
 
