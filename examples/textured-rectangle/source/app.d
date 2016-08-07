@@ -40,11 +40,21 @@ immutable char* fs_shader = "
 
 alias Mat4f = float[4][4];
 
+struct TextureUniform {
+
+	float[2] offset;
+
+	@TextureUnit(0)
+	Texture* diffuse;
+
+} // TextureUniform
+
 alias TextureShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0),
 		AttribTuple("uv", 1)
-	], float[2], "offset", Texture*, "diffuse");
+	], TextureUniform
+);
 
 struct Vertex2f2f {
 
@@ -157,8 +167,8 @@ void main() {
 		// cornflower blue, of course
 		device.clearColour(0x428bca);
 
-		float[2] offset = [-0.5, -0.5];
-		device.draw(texture_shader, vao, params, offset, &texture);
+		auto uniform_data = TextureUniform([-0.5, -0.5], &texture);
+		device.draw(texture_shader, vao, params, uniform_data);
 
 		window.present();
 

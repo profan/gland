@@ -70,11 +70,18 @@ alias TriangleShader = Shader!(
 	]
 );
 
+struct TextureUniform {
+
+	@TextureUnit(0)
+	Texture* diffuse;
+
+} // TextureUniform
+
 alias TextureShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.FragmentShader], [
         AttribTuple("position", 0),
         AttribTuple("uv", 1)
-    ], Texture*, "diffuse"
+    ], TextureUniform
 );
 
 struct Vertex2f3f {
@@ -217,7 +224,8 @@ void main() {
 		frame_buffer.draw(triangle_shader, vao, params);
 
 		// now render given texture, woo!
-		device.draw(texture_shader, rect_vao, params, &framebuffer_texture);
+		auto uniform_data = TextureUniform(&framebuffer_texture);
+		device.draw(texture_shader, rect_vao, params, uniform_data);
 
 		window.present();
 

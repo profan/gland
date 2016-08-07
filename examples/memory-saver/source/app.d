@@ -63,18 +63,31 @@ immutable char* tex_fs_shader = "
     }
 ";
 
+struct TriangleUniform {
+
+	float[4][4][] model;
+
+} // TriangleUniform
+
 alias TriangleShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0),
 		AttribTuple("colour", 1)
-	], float[4][4][], "model"
+	], TriangleUniform
 );
+
+struct TextureUniform {
+
+	@TextureUnit(0)
+	Texture* diffuse;
+
+} // TextureUniform
 
 alias TextureShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.FragmentShader], [
         AttribTuple("position", 0),
         AttribTuple("uv", 1)
-    ], Texture*, "diffuse"
+    ], TextureUniform
 );
 
 struct Vertex2f2f {
@@ -226,10 +239,12 @@ void main() {
 		transform.rotation.z += 0.01;
 
 		// render to texture, also clear with ze blau
-		frame_buffer.draw(triangle_shader, vao, params, [cast(float[4][4])transform.transform.ptr[0..16]]);
+		auto framebuf_uniform = TriangleUniform([cast(float[4][4])transform.transform.ptr[0..16]]);
+		frame_buffer.draw(triangle_shader, vao, params, framebuf_uniform);
 
 		// now render given texture, woo!
-		device.draw(texture_shader, rect_vao, params, &framebuffer_texture);
+		auto uniform_data = TextureUniform(&framebuffer_texture);
+		device.draw(texture_shader, rect_vao, params, uniform_data);
 
 
 		window.present();
