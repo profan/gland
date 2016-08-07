@@ -315,14 +315,17 @@ GLuint createShaderProgram(in GLuint[] shader_ids, in AttribTuple[] attribs) {
 } //createShaderProgram
 
 alias AttribTuple = Tuple!(string, "identifier", int, "offset");
-struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, UniformStructType) {
+struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, UniformStructType...) {
 
 	import std.string : format;
-	alias UniformStruct = UniformStructType;
+	static assert(UniformStructType.length == 0 || UniformStructType.length == 1);
+
+	static if (UniformStructType.length == 1) {
+		alias UniformStruct = UniformStructType[0];
+		mixin(q{GLint[%d] uniforms_;}.format(PODMembers!UniformStructType.length));
+	}
 
 	GLuint program_;
-	mixin(q{GLint[%d] uniforms_;}.format(PODMembers!UniformStructType.length));
-
 	@disable this(this);
 	@disable ref Shader opAssign(ref Shader);
 	
@@ -369,18 +372,21 @@ struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, UniformStruct
 		buffer ~= q{
 			new_shader.program_ = createShaderProgram(shader_ids, attributes);
 
-			foreach (i, m; PODMembers!UniformStruct) {
+			static if (UniformStructType.length == 1) {
+				foreach (i, m; PODMembers!UniformStruct) {
 
-				GLint res = glGetUniformLocation(new_shader.program_, m);
+					GLint res = glGetUniformLocation(new_shader.program_, m);
 
-				if (res == -1) {
-					immutable string error = format("failed to get uniform location for: %s (maybe it was optimized out?)", m);
-					assert(0, error);
+					if (res == -1) {
+						immutable string error = format("failed to get uniform location for: %s (maybe it was optimized out?)", m);
+						assert(0, error);
+					}
+
+					new_shader.uniforms_[i] = res;
+
 				}
-
-				new_shader.uniforms_[i] = res;
-
 			}
+
 		};
 
 		// linked into program now, delete for now.
@@ -1684,7 +1690,7 @@ void clearColour(DeviceType)(ref DeviceType device, GLint rgb)
 } // clearColour
 
 nothrow @nogc
-void draw_offset(DeviceType, ShaderType, VertexArrayType)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertex_count, ushort* offset, ref ShaderType.UniformStruct uniform)
+void draw_offset(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertex_count, ushort* offset, ref UniformTypes uniform)
 	    if (isDevice!DeviceType) {
 
 		Renderer.setViewport(device.width, device.height);
@@ -1704,7 +1710,7 @@ void draw_offset(DeviceType, ShaderType, VertexArrayType)(ref DeviceType device,
 }
 
 nothrow @nogc
-void draw(DeviceType, ShaderType, VertexArrayType, UniformType = ShaderType.UniformStruct)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, ref UniformType uniform)
+void draw(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, ref UniformTypes uniform)
 	if (isDevice!DeviceType) {
 
 	Renderer.setViewport(device.width, device.height);
@@ -1724,103 +1730,106 @@ void draw(DeviceType, ShaderType, VertexArrayType, UniformType = ShaderType.Unif
 }
 
 nothrow @nogc
-void draw(ShaderType, VertexArrayType, UniformType = ShaderType.UniformStruct)(ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, ref UniformType uniform) {
+void draw(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, ref UniformTypes uniform) {
 	draw_with_offset(shader, vao, params, cast(uint)vao.num_vertices_, cast(ushort*)0, uniform);
 } // draw
 
 alias Alias(alias Symbol) = Symbol;
 
 nothrow @nogc
-void draw_with_offset(ShaderType, VertexArrayType, UniformType = ShaderType.UniformStruct)(ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertex_count, ushort* offset, ref UniformType uniform) {
+void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertex_count, ushort* offset, ref UniformTypes uniforms) {
 
 	Renderer.bindVertexArray(vao);
 	Renderer.useProgram(shader.handle);
 
-	foreach (i, m; PODMembers!UniformType) with (shader) {
+	static assert(UniformTypes.length == 0 || is(UniformTypes[0] == ShaderType.UniformStruct));
 
-		alias T = typeof(__traits(getMember, uniform, m));
+	static if (UniformTypes.length == 1)
+	foreach (i, m; PODMembers!(UniformTypes[0])) with (shader) {
+
+		alias T = typeof(__traits(getMember, uniforms[0], m));
 
 		/**
 		 * Vectors
 		*/
 
 		static if (is (T : float)) {
-			glUniform1f(uniforms_[i], __traits(getMember, uniform, m));
+			glUniform1f(uniforms_[i], __traits(getMember, uniforms[0], m));
 		} else static if (is (T : float[2])) {
-			glUniform2f(uniforms_[i], __traits(getMember, uniform, m)[0], __traits(getMember, uniform, m)[1]);
+			glUniform2f(uniforms_[i], __traits(getMember, uniforms[0], m)[0], __traits(getMember, uniforms[0], m)[1]);
 		} else static if (is (T : float[3])) {
-			glUniform3f(uniforms_[i], __traits(getMember, uniform, m)[0], __traits(getMember, uniform, m)[1], __traits(getMember, uniform, m)[2]);
+			glUniform3f(uniforms_[i], __traits(getMember, uniforms[0], m)[0], __traits(getMember, uniforms[0], m)[1], __traits(getMember, uniforms[0], m)[2]);
 		} else static if (is (T : float[4])) {
-			glUniform4f(uniforms_[i], __traits(getMember, uniform, m)[0], __traits(getMember, uniform, m)[1], __traits(getMember, uniform, m)[2], __traits(getMember, uniform, m)[3]);
+			glUniform4f(uniforms_[i], __traits(getMember, uniforms[0], m)[0], __traits(getMember, uniforms[0], m)[1], __traits(getMember, uniforms[0], m)[2], __traits(getMember, uniforms[0], m)[3]);
 
 		} else static if (is (T : uint)) {
-			glUniform1ui(uniforms_[i], __traits(getMember, uniform, m));
+			glUniform1ui(uniforms_[i], __traits(getMember, uniforms[0], m));
 		} else static if (is (T : uint[2])) {
-			glUniform2ui(uniforms_[i], __traits(getMember, uniform, m)[0], __traits(getMember, uniform, m)[1]);
+			glUniform2ui(uniforms_[i], __traits(getMember, uniforms[0], m)[0], __traits(getMember, uniforms[0], m)[1]);
 		} else static if (is (T : uint[3])) {
-			glUniform3ui(uniforms_[i], __traits(getMember, uniform, m)[0], __traits(getMember, uniform, m)[1], __traits(getMember, uniform, m)[2]);
+			glUniform3ui(uniforms_[i], __traits(getMember, uniforms[0], m)[0], __traits(getMember, uniforms[0], m)[1], __traits(getMember, uniforms[0], m)[2]);
 		} else static if (is (T : uint[4])) {
-			glUniform4ui(uniforms_[i], __traits(getMember, uniform, m)[0], __traits(getMember, uniform, m)[1], __traits(getMember, uniform, m)[2], __traits(getMember, uniform, m)[3]);
+			glUniform4ui(uniforms_[i], __traits(getMember, uniforms[0], m)[0], __traits(getMember, uniforms[0], m)[1], __traits(getMember, uniforms[0], m)[2], __traits(getMember, uniforms[0], m)[3]);
 
 		} else static if (is (T : int)) {
-			glUniform1i(uniforms_[i], __traits(getMember, uniform, m));
+			glUniform1i(uniforms_[i], __traits(getMember, uniforms[0], m));
 		} else static if (is (T : int[2])) {
-			glUniform2i(uniforms_[i], __traits(getMember, uniform, m)[0], __traits(getMember, uniform, m)[1]);
+			glUniform2i(uniforms_[i], __traits(getMember, uniforms[0], m)[0], __traits(getMember, uniforms[0], m)[1]);
 		} else static if (is (T : int[3])) {
-			glUniform3i(uniforms_[i], __traits(getMember, uniform, m)[0], __traits(getMember, uniform, m)[1], __traits(getMember, uniform, m)[2]);
+			glUniform3i(uniforms_[i], __traits(getMember, uniforms[0], m)[0], __traits(getMember, uniforms[0], m)[1], __traits(getMember, uniforms[0], m)[2]);
 		} else static if (is (T : int[4])) {
-			glUniform4i(uniforms_[i], __traits(getMember, uniform, m)[0], __traits(getMember, uniform, m)[1], __traits(getMember, uniform, m)[2], __traits(getMember, uniform, m)[3]);
+			glUniform4i(uniforms_[i], __traits(getMember, uniforms[0], m)[0], __traits(getMember, uniforms[0], m)[1], __traits(getMember, uniforms[0], m)[2], __traits(getMember, uniforms[0], m)[3]);
 
 		} else static if (is (T : float[1][])) {
-			glUniform1fv(uniforms_[i], __traits(getMember, uniform, m).length, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniform1fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : float[2][])) {
-			glUniform2fv(uniforms_[i], __traits(getMember, uniform, m).length, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniform2fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : float[3][])) {
-			glUniform3fv(uniforms_[i], __traits(getMember, uniform, m).length, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniform3fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : float[4][])) {
-			glUniform4fv(uniforms_[i], __traits(getMember, uniform, m).length, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniform4fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 
 		} else static if (is (T : uint[1][])) {
-			glUniform1uiv(uniforms_[i], __traits(getMember, uniform, m).length, cast(uint*)__traits(getMember, uniform, m).ptr);
+			glUniform1uiv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(uint*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : uint[2][])) {
-			glUniform2uiv(uniforms_[i], __traits(getMember, uniform, m).length, cast(uint*)__traits(getMember, uniform, m).ptr);
+			glUniform2uiv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(uint*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : uint[3][])) {
-			glUniform3uiv(uniforms_[i], __traits(getMember, uniform, m).length, cast(uint*)__traits(getMember, uniform, m).ptr);
+			glUniform3uiv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(uint*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : uint[4][])) {
-			glUniform4uiv(uniforms_[i], __traits(getMember, uniform, m).length, cast(uint*)__traits(getMember, uniform, m).ptr);
+			glUniform4uiv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(uint*)__traits(getMember, uniforms[0], m).ptr);
 
 		} else static if (is (T : int[1][])) {
-			glUniform1iv(uniforms_[i], __traits(getMember, uniform, m).length, cast(int*)__traits(getMember, uniform, m).ptr);
+			glUniform1iv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(int*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : int[2][])) {
-			glUniform2iv(uniforms_[i], __traits(getMember, uniform, m).length, cast(int*)__traits(getMember, uniform, m).ptr);
+			glUniform2iv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(int*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : int[3][])) {
-			glUniform3iv(uniforms_[i], __traits(getMember, uniform, m).length, cast(int*)__traits(getMember, uniform, m).ptr);
+			glUniform3iv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(int*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : int[4][])) {
-			glUniform4iv(uniforms_[i], __traits(getMember, uniform, m).length, cast(int*)__traits(getMember, uniform, m).ptr);
+			glUniform4iv(uniforms_[i], __traits(getMember, uniforms[0], m).length, cast(int*)__traits(getMember, uniforms[0], m).ptr);
 
 		/**
 		 * Matrices
 		*/
 
 		} else static if (is (T : float[2][2][])) {
-			glUniformMatrix2fv(uniforms_[i], __traits(getMember, uniform, m).length, GL_FALSE, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniformMatrix2fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, GL_FALSE, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : float[3][3][])) {
-			glUniformMatrix3fv(uniforms_[i], __traits(getMember, uniform, m).length, GL_FALSE, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniformMatrix3fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, GL_FALSE, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : float[4][4][])) {
-			glUniformMatrix4fv(uniforms_[i], cast(int)__traits(getMember, uniform, m).length, GL_FALSE, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniformMatrix4fv(uniforms_[i], cast(int)__traits(getMember, uniforms[0], m).length, GL_FALSE, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 
 		} else static if (is (T : float[2][3][])) {
-			glUniformMatrix2x3fv(uniforms_[i], __traits(getMember, uniform, m).length, GL_FALSE, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniformMatrix2x3fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, GL_FALSE, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : float[3][2][])) {
-			glUniformMatrix3x2fv(uniforms_[i], __traits(getMember, uniform, m).length, GL_FALSE, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniformMatrix3x2fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, GL_FALSE, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : float[2][4][])) {
-			glUniformMatrix2x4fv(uniforms_[i], __traits(getMember, uniform, m).length, GL_FALSE, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniformMatrix2x4fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, GL_FALSE, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : float[4][2][])) {
-			glUniformMatrix4x2fv(uniforms_[i], __traits(getMember, uniform, m).length, GL_FALSE, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniformMatrix4x2fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, GL_FALSE, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : float[3][4][])) {
-			glUniformMatrix3x4fv(uniforms_[i], __traits(getMember, uniform, m).length, GL_FALSE, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniformMatrix3x4fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, GL_FALSE, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 		} else static if (is (T : float[4][3][])) {
-			glUniformMatrix4x3fv(uniforms_[i], __traits(getMember, uniform, m).length, GL_FALSE, cast(float*)__traits(getMember, uniform, m).ptr);
+			glUniformMatrix4x3fv(uniforms_[i], __traits(getMember, uniforms[0], m).length, GL_FALSE, cast(float*)__traits(getMember, uniforms[0], m).ptr);
 
 		/**
 		 * Textures
@@ -1831,10 +1840,10 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformType = ShaderType.Unif
 			import std.traits : getUDAs;
 
 			// currently just a single bind, think about this later
-			alias texture_units = getUDAs!(__traits(getMember, uniform, m), TextureUnit_);
+			alias texture_units = getUDAs!(__traits(getMember, uniforms[0], m), TextureUnit_);
 			assert(texture_units.length == 1);
 
-			Renderer.bindTexture(__traits(getMember, uniform, m).handle, texture_units[0].unit);
+			Renderer.bindTexture(__traits(getMember, uniforms[0], m).handle, texture_units[0].unit);
 
 		}
 
