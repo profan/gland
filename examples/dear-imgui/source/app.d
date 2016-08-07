@@ -112,6 +112,9 @@ struct ImguiContext {
 		// wandow
 		Window* window_;
 
+		// graphics device
+		Device* device_;
+
 		// graffix data
 		ImguiShader shader_;
 		Texture texture_;
@@ -147,10 +150,11 @@ struct ImguiContext {
 
 	} // load
 
-	void initialize(Window* window) {
+	void initialize(Window* window, Device* device) {
 
 		// DEPS
 		window_ = window;
+		device_ = device;
 
 		ImGuiIO* io = igGetIO();
 
@@ -309,7 +313,7 @@ struct ImguiContext {
 			
 					// temporary opaque texture
 					OpaqueTexture cur_texture = Texture.fromId(cast(uint)pcmd.TextureId);
-					Renderer.draw_with_offset(shader_, vao_, draw_params, pcmd.ElemCount, idx_buffer_offset, proj_data[], &cur_texture);
+					(*device_).draw_offset(shader_, vao_, draw_params, pcmd.ElemCount, idx_buffer_offset, proj_data[], &cur_texture);
 					
 				}
 				
@@ -374,6 +378,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
+	auto device = Renderer.createDevice(&window.width, &window.height);
 
 	final switch (result) with (Window.Error) {
 
@@ -391,7 +396,7 @@ void main() {
 
 	// LOAD ZE IMGUI
 	ImguiContext context;
-	context.initialize(&window);
+	context.initialize(&window, &device);
 
 	while (window.isAlive) {
 
@@ -407,7 +412,7 @@ void main() {
 		DrawParams params = {};
 
 		// cornflower blue, of course
-		Renderer.clearColour(0x428bca);
+		device.clearColour(0x428bca);
 
 		// FRAEMZ
 		context.newFrame(1.0);

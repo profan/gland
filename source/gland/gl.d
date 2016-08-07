@@ -1680,6 +1680,26 @@ void clearColour(DeviceType)(ref DeviceType device, GLint rgb)
 } // clearColour
 
 nothrow @nogc
+void draw_offset(DeviceType, ShaderType, VertexArrayType, Args...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, uint vertex_count, ushort* offset, Args args)
+	    if (isDevice!DeviceType) {
+
+		Renderer.setViewport(device.width, device.height);
+
+		static if (isFramebuffer!DeviceType) {
+
+			Renderer.bindFramebuffer(device.handle);
+			draw_with_offset(shader, vao, params, vertex_count, offset, args);
+
+		} else {
+
+			Renderer.bindFramebuffer(0);
+			draw_with_offset(shader, vao, params, vertex_count, offset, args);
+
+		}
+
+}
+
+nothrow @nogc
 void draw(DeviceType, ShaderType, VertexArrayType, Args...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, DrawParams params, Args args)
 	if (isDevice!DeviceType) {
 
