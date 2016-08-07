@@ -1428,6 +1428,9 @@ static:
 	//GL_CURRENT_PROGRAM
 	GLint current_program_binding;
 
+	//GL_FRAMEBUFFER_BINDING
+	GLuint framebuffer_binding;
+
 	/**
 	 * misc state
 	*/
@@ -1625,6 +1628,19 @@ private:
 	} // bindBuffer
 
 	nothrow @nogc
+	bool bindFramebuffer(GLuint id) {
+
+		if (framebuffer_binding == id) {
+			return false;
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, id);
+		framebuffer_binding = id;
+		return true;
+
+	} // bindFramebuffer
+
+	nothrow @nogc
 	bool useProgram(GLuint program) {
 
 		if (current_program_binding == program) {
@@ -1654,13 +1670,12 @@ nothrow @nogc
 void clearColour(DeviceType)(ref DeviceType device, GLint rgb)
 	if (isDevice!DeviceType) {
 
-	static if (isFramebuffer!DeviceType) { glBindFramebuffer(GL_FRAMEBUFFER, buffer.handle); }
+	static if (isFramebuffer!DeviceType) { Renderer.bindFramebuffer(device.handle); }
+	else { Renderer.bindFramebuffer(0); }
 
 	auto colour = to!GLColour(rgb);
 	glClearColor(colour[0], colour[1], colour[2], colour[3]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	static if (isFramebuffer!DeviceType) { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
 } // clearColour
 
@@ -1672,12 +1687,12 @@ void draw(DeviceType, ShaderType, VertexArrayType, Args...)(ref DeviceType devic
 
 	static if (isFramebuffer!DeviceType) {
 
-		glBindFramebuffer(GL_FRAMEBUFFER, device.handle);
+		Renderer.bindFramebuffer(device.handle);
 		draw(shader, vao, params, args);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	} else {
 
+		Renderer.bindFramebuffer(0);
 		draw(shader, vao, params, args);
 
 	}
