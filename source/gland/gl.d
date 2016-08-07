@@ -1744,6 +1744,22 @@ void draw_with_offset(ShaderType, VertexArrayType, Args...)(ref ShaderType shade
 
 	Renderer.bindVertexArray(vao);
 	Renderer.useProgram(shader.handle);
+
+	/**
+	 * this keeps track of active texture number, TODO: put this in the uniform struct instead, maybe something like
+
+		struct PassedData {
+
+			@TextureUnit(0)
+			Texture* texture_1;
+
+			@TextureUnit(1)
+			Texture* texture_2;
+
+		}
+
+	*/
+
 	uint current_texture = 0;
 
 	foreach (i, T; Args) with (shader) {
