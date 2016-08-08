@@ -286,6 +286,7 @@ GLuint compileShader(const(GLchar*)* shader_source, ShaderType shader_type) {
 
 } // compileShader
 
+nothrow @nogc
 GLuint createShaderProgram(in GLuint[] shader_ids, in AttribTuple[] attribs) {
 
 	GLuint program = glCreateProgram();
@@ -343,7 +344,7 @@ struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, UniformStruct
 
 		auto buffer = appender!string();
 
-		buffer ~= q{static Error compile(ref Shader new_shader, %s) {
+		buffer ~= q{nothrow @nogc static Error compile(ref Shader new_shader, %s) {
 			%s
 		}}.format(shaders.enumerate.map!(e => q{const (char*)* source_%d}.format(e.index)).joiner(","), createCompiler(shaders));
 
@@ -377,8 +378,8 @@ struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, UniformStruct
 
 					GLint res = glGetUniformLocation(new_shader.program_, m);
 
+					enum error = format("failed to get uniform location for: %s (maybe it was optimized out?)", m);
 					if (res == -1) {
-						immutable string error = format("failed to get uniform location for: %s (maybe it was optimized out?)", m);
 						assert(0, error);
 					}
 
@@ -411,17 +412,17 @@ struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, UniformStruct
 	/* generator */
 	mixin(createFunction(shader_types));
 
+	@nogc
+	nothrow
 	~this() {
 
 		glDeleteProgram(program_);
 
 	} // ~this
 
+	@nogc
+	nothrow
 	@property {
-
-		bool valid() {
-			return true;
-		} // valid
 
 		GLuint handle() {
 			return program_;
@@ -507,7 +508,7 @@ enum InternalTextureFormat {
 
 	R8 = GL_R8,
 	R8I = GL_R8I,
-	R8UI= GL_R8UI,
+	R8UI = GL_R8UI,
 
 	R16F = GL_R16F,
 	R16I = GL_R16I,
@@ -655,12 +656,14 @@ struct Texture {
 
 	@disable ref Texture opAssign(ref Texture);
 
+	nothrow @nogc
 	static Error create(DataType)(ref Texture texture, in DataType[] texture_data, int width, int height, TextureParams params) {
 
 		return Texture.create(texture, texture_data.ptr, width, height, params);
 
 	} // create
 
+	nothrow @nogc
 	static Error create(DataType)(ref Texture texture, in DataType* texture_data, int width, int height, TextureParams params) {
 
 		texture.width_ = width;
@@ -726,6 +729,8 @@ struct Texture {
 
 	} // fromId
 
+	@nogc
+	nothrow
 	~this() {
 
 		glDeleteTextures(1, &handle_);
@@ -796,6 +801,7 @@ struct SimpleFramebuffer {
 		Success = "SimpleFrameBuffer successfully created!"
 	} // Error
 
+	nothrow @nogc
 	static Error create(ref SimpleFramebuffer buffer, ref Texture texture, bool with_depth_buffer) {
 
 		// from texture
@@ -823,6 +829,8 @@ struct SimpleFramebuffer {
 
 	} // create
 
+	@nogc
+	nothrow
 	~this() {
 
 		glDeleteRenderbuffers(1, &depth_);
@@ -874,6 +882,7 @@ struct Framebuffer(WithDepthBuffer wdb = WithDepthBuffer.No) {
 		Success = "FrameBuffer successfully created!"
 	} // Error
 
+	nothrow @nogc
 	static Error create(FrameBufferType)(ref FrameBufferType buffer, int w, int h) {
 
 		// from texture
