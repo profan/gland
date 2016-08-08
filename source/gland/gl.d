@@ -1197,17 +1197,18 @@ struct VertexArrayT(VDataType) {
 
 		static if (DrawFunction == DrawType.DrawElements || DrawFunction == DrawType.DrawElementsInstanced) {
 			alias MembersWithTypeProvider = MembersByUDA!(VDataType, TypeProvider_);
-			static assert(MembersWithTypeProvider.length == 1, "struct needs @TypeProvider (decides what primitive to pass to draw call)");
+			static assert(MembersWithTypeProvider.length == 1, "struct needs exactly one @TypeProvider (decides what primitive to pass to draw call)");
 			vao.draw_type_ = TypeToGL!(typeof(__traits(getMember, data, MembersWithTypeProvider[0])[0]));
 		}
 		
 		static if (isInstancedDrawing) {
 			alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
+			static assert(MembersWithInstanceCountProvider.length == 1, "struct needs exactly one @InstanceCountProvider!");
 			vao.num_instances_ = cast(uint)__traits(getMember, data, MembersWithInstanceCountProvider[0]).length;
 		}
 
 		alias MembersWithCountProvider = MembersByUDA!(VDataType, VertexCountProvider_);
-		static assert(MembersWithCountProvider.length == 1, "struct needs @VertexCountProvider, either a function or an array!");		
+		static assert(MembersWithCountProvider.length == 1, "struct needs exactly one @VertexCountProvider, attached to a function or an array!");
 
 		enum Provider = MembersWithCountProvider[0];
 		static if (isArray!(typeof(__traits(getMember, VDataType, Provider)))) {
