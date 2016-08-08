@@ -870,6 +870,7 @@ struct Framebuffer(WithDepthBuffer wdb = WithDepthBuffer.No) {
 	@disable ref typeof(this) opAssign(ref typeof(this));
 
 	enum Error {
+		FailedCreatingFramebufferTexture = "Failed Creating Framebuffer Texture!",
 		Success = "FrameBuffer successfully created!"
 	} // Error
 
@@ -878,7 +879,7 @@ struct Framebuffer(WithDepthBuffer wdb = WithDepthBuffer.No) {
 		// from texture
 		auto texture_result = Texture.create(buffer.texture_, null, w, h); 
 		if (texture_result != Texture.Error.Success) {
-			assert(0, "failed creating framebuffer texture!");
+			return Error.FailedCreatingFramebufferTexture;
 		}
 
 		// now set up frame buffer
