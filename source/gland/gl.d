@@ -104,25 +104,15 @@ template TypeToGL(T) {
 
 	import std.format : format;
 
-	static if (is (T == float)) {
-		enum TypeToGL = GL_FLOAT;
-	} else static if (is (T == double)) {
-		enum TypeToGL = GL_DOUBLE;
-	} else static if (is (T == int)) {
-		enum TypeToGL = GL_INT;
-	} else static if (is (T == uint)) {
-		enum TypeToGL = GL_UNSIGNED_INT;
-	} else static if (is (T == short)) {
-		enum TypeToGL = GL_SHORT;
-	} else static if (is (T == ushort)) {
-		enum TypeToGL = GL_UNSIGNED_SHORT;
-	} else static if (is (T == byte)) {
-		enum TypeToGL = GL_BYTE;
-	} else static if (is (T == ubyte) || is(T == void)) {
-		enum TypeToGL = GL_UNSIGNED_BYTE;
-	} else {
-		static assert (0, format("No type conversion found for: %s to OpenGL equivalent.", T.stringof));
-	}
+	static if (is (T == float)) 		enum TypeToGL = GL_FLOAT;
+	else static if (is (T == double)) 	enum TypeToGL = GL_DOUBLE;
+	else static if (is (T == int)) 		enum TypeToGL = GL_INT;
+	else static if (is (T == uint)) 	enum TypeToGL = GL_UNSIGNED_INT;
+	else static if (is (T == short)) 	enum TypeToGL = GL_SHORT;
+	else static if (is (T == ushort)) 	enum TypeToGL = GL_UNSIGNED_SHORT;
+	else static if (is (T == byte)) 	enum TypeToGL = GL_BYTE;
+	else static if (is (T == ubyte)) 	enum TypeToGL = GL_UNSIGNED_BYTE;
+	else								static assert (0, format("No type conversion found for: %s to OpenGL equivalent.", T.stringof));
 
 } // TypeToGL
 
@@ -964,7 +954,7 @@ auto InstanceCountProvider() {
 struct OffsetProvider_ {
 } // OffsetProvider
 
-@property 
+@property
 auto OffsetProvider() {
 	return OffsetProvider_();
 } // OffsetProvider
@@ -972,7 +962,15 @@ auto OffsetProvider() {
 struct TypeProvider_ {
 } // TypeProvider_
 
-@property 
+@property
+auto ManualCountProvider() {
+	return ManualCountProvider_();
+} // ManualCountProvider
+
+struct ManualCountProvider_ {
+} // ManualCountProvider_
+
+@property
 auto TypeProvider() {
 	return TypeProvider_();
 } // TypeProvider
@@ -1205,26 +1203,33 @@ struct VertexArrayT(VDataType) {
 
 		}
 
+		enum HasManualCount = hasUDA!(VDataType, ManualCountProvider_);
+		static if (!HasManualCount) {
+		
+			// only do if actually supposed to be done automatically
+			
+			static if (isInstancedDrawing) {
+				alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
+				static assert(MembersWithInstanceCountProvider.length == 1, "struct needs exactly one @InstanceCountProvider!");
+				vao.num_instances_ = cast(uint)__traits(getMember, data, MembersWithInstanceCountProvider[0]).length;
+			}
+
+			alias MembersWithCountProvider = MembersByUDA!(VDataType, VertexCountProvider_);
+			static assert(MembersWithCountProvider.length == 1, "struct needs exactly one @VertexCountProvider, attached to a function or an array!");
+
+			enum Provider = MembersWithCountProvider[0];
+			static if (isArray!(typeof(__traits(getMember, VDataType, Provider)))) {
+				vao.num_vertices_ = cast(uint)__traits(getMember, data, Provider).length;
+			} else static if (isCallable!(__traits(getMember, VDataType, Provider))) {
+				vao.num_vertices_ = __traits(getMember, data, Provider)();
+			}
+			
+		}
+
 		static if (DrawFunction == DrawType.DrawElements || DrawFunction == DrawType.DrawElementsInstanced) {
 			alias MembersWithTypeProvider = MembersByUDA!(VDataType, TypeProvider_);
 			static assert(MembersWithTypeProvider.length == 1, "struct needs exactly one @TypeProvider (decides what primitive to pass to draw call)");
 			vao.draw_type_ = TypeToGL!(typeof(__traits(getMember, data, MembersWithTypeProvider[0])[0]));
-		}
-		
-		static if (isInstancedDrawing) {
-			alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
-			static assert(MembersWithInstanceCountProvider.length == 1, "struct needs exactly one @InstanceCountProvider!");
-			vao.num_instances_ = cast(uint)__traits(getMember, data, MembersWithInstanceCountProvider[0]).length;
-		}
-
-		alias MembersWithCountProvider = MembersByUDA!(VDataType, VertexCountProvider_);
-		static assert(MembersWithCountProvider.length == 1, "struct needs exactly one @VertexCountProvider, attached to a function or an array!");
-
-		enum Provider = MembersWithCountProvider[0];
-		static if (isArray!(typeof(__traits(getMember, VDataType, Provider)))) {
-			vao.num_vertices_ = cast(uint)__traits(getMember, data, Provider).length;
-		} else static if (isCallable!(__traits(getMember, VDataType, Provider))) {
-			vao.num_vertices_ = __traits(getMember, data, Provider)();
 		}
 
 		// set ze draw primitive

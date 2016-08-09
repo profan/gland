@@ -78,6 +78,7 @@ alias ImguiShader = Shader!(
 
 struct ImVert {
 
+	// make sure that size of our struct matches the one in the lib
 	static assert(typeof(this).sizeof == ImDrawVert.sizeof);
 
 	float[2] position;
@@ -88,6 +89,7 @@ struct ImVert {
 
 } // ImVert
 
+@(ManualCountProvider)
 @(DrawType.DrawElements)
 struct ImguiData {
 
@@ -95,18 +97,10 @@ struct ImguiData {
 	@(BufferTarget.ArrayBuffer)
 	ImVert[] vertices;
 
+	@TypeProvider // it gets the element type from this
 	@(DrawHint.StreamDraw)
 	@(BufferTarget.ElementArrayBuffer)
-	@InstanceCountProvider
-	@TypeProvider
 	ImDrawIdx[] indices;
-
-	@property
-	nothrow @nogc
-	@VertexCountProvider
-	uint numVertices() {
-		return cast(uint)indices.length;
-	} // numVertices
 
 } // ImguiData
 
