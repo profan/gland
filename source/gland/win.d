@@ -237,4 +237,11 @@ struct Window {
 
 	} // handleEvents
 
+
+	void setFullscreen() {
+
+		SDL_SetWindowFullscreen(window_, SDL_WINDOW_FULLSCREEN);
+
+	} // toggleFullscreen
+
 } // Window

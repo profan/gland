@@ -137,6 +137,9 @@ void main() {
 	auto result = Window.create(window, 640, 480);
 	auto device = Renderer.createDevice(&window.width, &window.height);
 
+	// go fullscreena
+	window.setFullscreen();
+
 	final switch (result) with (Window.Error) {
 
 		/* return from main if we failed, print stuff. */

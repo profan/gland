@@ -316,7 +316,7 @@ GLuint createShaderProgram(in GLuint[] shader_ids, in AttribTuple[] attribs) {
 } //createShaderProgram
 
 alias AttribTuple = Tuple!(string, "identifier", int, "offset");
-struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, UniformStructType...) {
+struct Shader(immutable ShaderType[] shader_types, immutable AttribTuple[] attributes, UniformStructType...) {
 
 	import std.string : format;
 	static assert(UniformStructType.length == 0 || UniformStructType.length == 1);
@@ -336,7 +336,7 @@ struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, UniformStruct
 	
 	} // Error
 
-	static string createFunction(ShaderType[] shaders) {
+	static string createFunction(immutable ShaderType[] shaders) {
 
 		import std.algorithm : map, joiner;
 		import std.range : enumerate;
@@ -344,7 +344,7 @@ struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, UniformStruct
 
 		auto buffer = appender!string();
 
-		buffer ~= q{nothrow @nogc static Error compile(ref Shader new_shader, %s) {
+		buffer ~= q{nothrow static Error compile(ref Shader new_shader, %s) {
 			%s
 		}}.format(shaders.enumerate.map!(e => q{const (char*)* source_%d}.format(e.index)).joiner(","), createCompiler(shaders));
 
@@ -352,7 +352,7 @@ struct Shader(ShaderType[] shader_types, AttribTuple[] attributes, UniformStruct
 
 	} // createFunction
 
-	static string createCompiler(ShaderType[] shaders) {
+	static string createCompiler(immutable ShaderType[] shaders) {
 
 		import std.algorithm : map, joiner;
 		import std.range : enumerate;
