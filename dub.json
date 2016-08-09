@@ -14,10 +14,10 @@
 	},
 	"subPackages": [
 		"./examples/triangle",
-		"./examples/textured-rectangle",
 		"./examples/indexed",
-		"./examples/font-rendering",
+		"./examples/textured-rectangle",
 		"./examples/render-to-texture",
+		"./examples/font-rendering",
 		"./examples/dear-imgui",
 		"./examples/memory-saver"
 	]

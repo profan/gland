@@ -1035,7 +1035,7 @@ template CollectEnumMembers(T, ET) {
 struct VertexArrayT(VDataType) {
 
 	import std.meta : AliasSeq;
-	import std.traits : isInstanceOf, getUDAs;
+	import std.traits : isInstanceOf, getUDAs, hasUDA;
 
 	// HACK: this is getting around the fact that i can't just get all members with a certain UDA for enum types, the concrete value
 	//  was in this case required, so it iterates over the enum's members and concatenates the results.
@@ -1048,6 +1048,7 @@ struct VertexArrayT(VDataType) {
 	static if (StructUDAs.length == 1) alias DrawFunction = StructUDAs[0];
 
 	enum isInstancedDrawing = (DrawFunction == DrawType.DrawArraysInstanced || DrawFunction == DrawType.DrawElementsInstanced);
+	enum isManuallyDrawn = hasUDA!(VDataType, ManualCountProvider_);
 	
 	private {
 
@@ -1223,11 +1224,11 @@ struct VertexArrayT(VDataType) {
 
 		}
 
-		enum HasManualCount = hasUDA!(VDataType, ManualCountProvider_);
-		static if (!HasManualCount) {
-		
+
+
+		static if (!isManuallyDrawn) {
+
 			// only do if actually supposed to be done automatically
-			
 			static if (isInstancedDrawing) {
 				alias MembersWithInstanceCountProvider = MembersByUDA!(VDataType, InstanceCountProvider_);
 				static assert(MembersWithInstanceCountProvider.length == 1, "struct needs exactly one @InstanceCountProvider!");
@@ -1243,7 +1244,7 @@ struct VertexArrayT(VDataType) {
 			} else static if (isCallable!(__traits(getMember, VDataType, Provider))) {
 				vao.num_vertices_ = __traits(getMember, data, Provider)();
 			}
-			
+
 		}
 
 		static if (DrawFunction == DrawType.DrawElements || DrawFunction == DrawType.DrawElementsInstanced) {
@@ -1732,15 +1733,11 @@ void draw_offset(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref D
 		Renderer.setViewport(device.width, device.height);
 
 		static if (isFramebuffer!DeviceType) {
-
 			Renderer.bindFramebuffer(device.handle);
 			draw_with_offset(shader, vao, params, vertex_count, offset, uniform);
-
 		} else {
-
 			Renderer.bindFramebuffer(0);
 			draw_with_offset(shader, vao, params, vertex_count, offset, uniform);
-
 		}
 
 }
@@ -1748,19 +1745,17 @@ void draw_offset(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref D
 nothrow @nogc
 void draw(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, ref UniformTypes uniform)
 	if (isDevice!DeviceType) {
+	
+	static assert(!VertexArrayType.isManuallyDrawn, "can't infer drawing with a @ManualCountProvider annotated vao, please use draw_offset!");
 
 	Renderer.setViewport(device.width, device.height);
 
 	static if (isFramebuffer!DeviceType) {
-
 		Renderer.bindFramebuffer(device.handle);
 		draw(shader, vao, params, uniform);
-
 	} else {
-
 		Renderer.bindFramebuffer(0);
 		draw(shader, vao, params, uniform);
-
 	}
 
 }
