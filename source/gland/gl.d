@@ -104,15 +104,33 @@ template TypeToGL(T) {
 
 	import std.format : format;
 
-	static if (is (T == float)) 		enum TypeToGL = GL_FLOAT;
-	else static if (is (T == double)) 	enum TypeToGL = GL_DOUBLE;
-	else static if (is (T == int)) 		enum TypeToGL = GL_INT;
-	else static if (is (T == uint)) 	enum TypeToGL = GL_UNSIGNED_INT;
-	else static if (is (T == short)) 	enum TypeToGL = GL_SHORT;
-	else static if (is (T == ushort)) 	enum TypeToGL = GL_UNSIGNED_SHORT;
-	else static if (is (T == byte)) 	enum TypeToGL = GL_BYTE;
-	else static if (is (T == ubyte)) 	enum TypeToGL = GL_UNSIGNED_BYTE;
-	else								static assert (0, format("No type conversion found for: %s to OpenGL equivalent.", T.stringof));
+	static if (is (T == float)) {
+		enum TypeToGL = GL_FLOAT;
+
+	} else static if (is (T == double)) {
+		enum TypeToGL = GL_DOUBLE;
+
+	} else static if (is (T == int)) {
+		enum TypeToGL = GL_INT;
+
+	} else static if (is (T == uint)) {
+		enum TypeToGL = GL_UNSIGNED_INT;
+
+	} else static if (is (T == short)) {
+		enum TypeToGL = GL_SHORT;
+
+	} else static if (is (T == ushort)) {
+		enum TypeToGL = GL_UNSIGNED_SHORT;
+
+	} else static if (is (T == byte)) {
+		enum TypeToGL = GL_BYTE;
+
+	} else static if (is (T == ubyte) || is(T == void)) {
+		enum TypeToGL = GL_UNSIGNED_BYTE;
+
+	} else {
+		static assert (0, format("No type conversion found for: %s to OpenGL equivalent.", T.stringof));
+	}
 
 } // TypeToGL
 
