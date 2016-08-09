@@ -1140,13 +1140,14 @@ struct VertexArrayT(VDataType) {
 						
 							uint i = current_attrib_index;
 							alias ElementType = typeof(__traits(getMember, VDataType, VS)[0][0]);
+							enum IsNormalized = hasUDA!(__traits(getMember, VDataType, VS), Normalized_);
 							enum ArrLen = VertexType.length;
 
 							glEnableVertexAttribArray(i);
 							glVertexAttribPointer(i,
 								VertexType.sizeof / ElementType.sizeof,
 								TypeToGL!ElementType,
-								GL_FALSE, // normalization TODO
+								IsNormalized, // TODO: test this normalization
 								VertexType.sizeof, // stride to jump
 								cast(const(void)*)0
 							);
@@ -1164,12 +1165,13 @@ struct VertexArrayT(VDataType) {
 
 						uint i = current_attrib_index;
 						alias ElementType = VertexType;
+						enum IsNormalized = hasUDA!(__traits(getMember, VDataType, VertexType), Normalized_);
 
 						glEnableVertexAttribArray(i);
 						glVertexAttribPointer(i,
 							VertexType.sizeof,
 							TypeToGL!ElementType,
-							GL_FALSE, // normalization TODO
+							IsNormalized, // TODO: test this normalization too
 							VertexType.sizeof,
 							cast(const(void*))0
 						);
