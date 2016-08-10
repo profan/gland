@@ -639,7 +639,15 @@ bool hasDepth(TextureType type) {
 	return (type == TextureType.Texture3D || type == TextureType.Texture2DArray);
 } // hasDepth
 
-mixin template BaseTexture(TextureType TType) {
+template TypeToGLTexture(T) {
+
+	static if (is (T : Texture2D)) {
+		enum TypeToGLTexture = TextureType.Texture2D;
+	}
+
+} // TypeToGLTexture
+
+struct Texture {
 
 	private {
 
@@ -648,9 +656,16 @@ mixin template BaseTexture(TextureType TType) {
 		InternalTextureFormat internal_format_;
 		PixelFormat pixel_format_;
 
-		uint width_;
-		static if (hasHeight(TType)) uint height_;
-		static if (hasDepth(TType)) uint depth_;
+	}
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
+
+	@property
+	const @nogc nothrow {
+
+		GLuint handle() { return handle_; }
+		TextureType type() { return texture_type_; }
 
 	}
 
@@ -658,73 +673,12 @@ mixin template BaseTexture(TextureType TType) {
 		Success = "Succesfully created Texture!"
 	} // Error
 
-	@disable this(this);
-	@disable ref typeof(this) opAssign(ref typeof(this));
-
-	static if (hasHeight(TType) && hasDepth(TType)) {
-
-		static Error create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, int depth, ref TextureParams params) {
-
-			return create(texture, texture_data.ptr, width, height, depth, params);
-
-		} // create
-
-		static Error create(DataType)(ref typeof(this) texture, in DataType* texture_data, int width, int height, int depth, ref TextureParams params) {
-
-			texture.width_ = width;
-			texture.height_ = height;
-			texture.depth_ = depth;
-
-			return create(texture, texture_data, params);
-
-		} // create
-
-	} else static if (hasHeight(TType)) {
-
-		static Error create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
-
-			return create(texture, texture_data.ptr, width, height, params);
-
-		} // create
-
-		static Error create(DataType)(ref typeof(this) texture, in DataType* texture_data, int width, int height, ref TextureParams params) {
-
-			texture.width_ = width;
-			texture.height_ = height;
-
-			return create(texture, texture_data, params);
-
-		} // create
-
-	} else {
-
-		static Error create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, ref TextureParams params) {
-
-			return create(texture, texture_data, width, params);
-
-		} // create
-
-		static Error create(DataType)(ref typeof(this) texture, in DataType* texture_data, int width, ref TextureParams params) {
-			
-			texture.width_ = width;
-
-			return create(texture, texture_data, params);
-
-		} // create
-
-	}
-
 	nothrow @nogc
-    private static Error create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
+	private static Error create(T, DataType)(ref T texture, in DataType* texture_data, ref TextureParams params) {
 
-        return Texture.create(texture, texture_data.ptr, width, height, params);
+		enum TType = TypeToGLTexture!T;
 
-    } // create
-
-	nothrow @nogc
-	private static Error create(DataType)(ref typeof(this) texture, in DataType* texture_data, ref TextureParams params) {
-
-		texture.texture_type_ = t_type;
+		texture.texture_type_ = TType;
 		texture.internal_format_ = params.internal_format;
 		texture.pixel_format_ = params.pixel_format;
 
@@ -754,7 +708,7 @@ mixin template BaseTexture(TextureType TType) {
 
 		auto data_type = TypeToGL!DataType;
 
-		static if (t_type == TextureType.Texture1D) {
+		static if (TType == TextureType.Texture1D) {
 
 			glTexImage1D(
 				texture.texture_type_,
@@ -804,107 +758,6 @@ mixin template BaseTexture(TextureType TType) {
 
 	} // create
 
-} // BaseTexture
-
-struct Texture {
-
-	private {
-
-		GLuint handle_;
-		TextureType texture_type_;
-		InternalTextureFormat internal_format_;
-		PixelFormat pixel_format_;
-
-		uint width_;
-		uint height_;
-
-	}
-
-	@disable this(this);
-	@disable ref typeof(this) opAssign(ref typeof(this));
-
-	@property
-	const @nogc nothrow {
-
-		uint width() { return width_; }
-		uint height() { return height_; }
-		GLuint handle() { return handle_; }
-		TextureType type() { return texture_type_; }
-
-	}
-
-	enum Error {
-		Success = "Succesfully created Texture!"
-	} // Error
-
-	@disable ref Texture opAssign(ref Texture);
-
-	nothrow @nogc
-	static Error create(DataType)(ref Texture texture, in DataType[] texture_data, int width, int height, TextureParams params) {
-
-		return Texture.create(texture, texture_data.ptr, width, height, params);
-
-	} // create
-
-	nothrow @nogc
-	static Error create(DataType)(ref Texture texture, in DataType* texture_data, int width, int height, TextureParams params) {
-
-		texture.width_ = width;
-		texture.height_ = height;
-		
-		texture.texture_type_ = TextureType.Texture2D;
-		texture.internal_format_ = params.internal_format;
-		texture.pixel_format_ = params.pixel_format;
-
-		// begin creation
-		glGenTextures(1, &texture.handle_);
-		Renderer.bindTexture(texture.handle, 0);
-
-		// set texture parameters in currently bound texture, controls texture wrapping (or GL_CLAMP?)
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_S, params.wrapping);
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_T, params.wrapping);
-
-		// linearly interpolate between pixels, MIN if texture is too small for drawing area, MAG if drawing area is smaller than texture
-		glTexParameterf(texture.texture_type_, GL_TEXTURE_MIN_FILTER, params.filtering);
-		glTexParameterf(texture.texture_type_, GL_TEXTURE_MAG_FILTER, params.filtering);
-
-		// mipmapping levels
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_BASE_LEVEL, params.mipmap_base_level);
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_MAX_LEVEL, params.mipmap_max_level);
-
-		// level of detail
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_MIN_LOD, params.min_lod);
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_MAX_LOD, params.max_lod);
-
-		// pixel pack and unpack alignment
-		glPixelStorei(GL_PACK_ALIGNMENT, params.pack_alignment);
-		glPixelStorei(GL_UNPACK_ALIGNMENT, params.unpack_alignment);
-
-		auto data_type = TypeToGL!DataType;
-
-		glTexImage2D(
-			texture.texture_type_,
-			0,
-			texture.internal_format_,
-			texture.width_, texture.height_,
-			0,
-			texture.pixel_format_,
-			data_type,
-			cast(void*)texture_data
-		);
-
-		return Error.Success;
-
-	} // create
-
-	nothrow @nogc
-	void update(int x_offset, int y_offset, int width, int height, in void* bytes) {
-
-		Renderer.bindTexture(this.handle_, 0);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x_offset, y_offset, width, height, this.pixel_format_, GL_UNSIGNED_BYTE, bytes);
-
-	} // update
-
 	@nogc nothrow
 	static OpaqueTexture fromId(GLuint id) {
 
@@ -912,13 +765,48 @@ struct Texture {
 
 	} // fromId
 
-	@nogc
-	nothrow
-	~this() {
+} // Texture
 
-		glDeleteTextures(1, &handle_);
+struct Texture1D {
 
-	} // ~this
+	private {
+
+		Texture texture_;
+
+	}
+
+	alias texture_ this;
+
+} // Texture1D
+
+struct Texture2D {
+
+	private {
+
+		Texture texture_;
+		
+		uint width_;
+		uint height_;
+
+	}
+
+	alias texture_ this;
+
+	@property 
+	nothrow @nogc const {
+
+		uint width() { return width_; }
+		uint height() { return height_; }
+
+	}
+
+	static auto create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
+
+		texture.width_ = width;
+		texture.height_ = height;
+		return Texture.create(texture, texture_data.ptr, params);
+
+	} // create
 
 	SimpleFramebuffer.Error asSurface(ref SimpleFramebuffer buffer, bool with_depth_buffer) {
 
@@ -926,35 +814,41 @@ struct Texture {
 
 	} // asSurface
 
-} // Texture
-
-struct Texture1D {
-
-	mixin BaseTexture!(TextureType.Texture1D);
-
-} // Texture1D
-
-struct Texture2D {
-
-	mixin BaseTexture!(TextureType.Texture2D);
-
 } // Texture2D
 
 struct Texture3D {
 
-	mixin BaseTexture!(TextureType.Texture3D);
+	private {
+
+		Texture texture_;
+
+	}
+
+	alias texture_ this;
 
 } // Texture3D
 
 struct Texture1DArray {
 
-	mixin BaseTexture!(TextureType.Texture1DArray);
+	private {
+
+		Texture texture_;
+
+	}
+
+	alias texture_ this;
 
 } // Texture1DArray
 
 struct Texture2DArray {
 
-	mixin BaseTexture!(TextureType.Texture2DArray);
+	private {
+
+		Texture texture_;
+
+	}
+
+	alias texture_ this;
 
 } // Texture2DArray
 
@@ -999,7 +893,7 @@ struct SimpleFramebuffer {
 	} // Error
 
 	nothrow @nogc
-	static Error create(ref SimpleFramebuffer buffer, ref Texture texture, bool with_depth_buffer) {
+	static Error create(ref SimpleFramebuffer buffer, ref Texture2D texture, bool with_depth_buffer) {
 
 		// from texture
 		buffer.width_ = texture.width;
