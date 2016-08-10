@@ -641,8 +641,14 @@ bool hasDepth(TextureType type) {
 
 template TypeToGLTexture(T) {
 
+	import std.string : format;
+
 	static if (is (T : Texture2D)) {
 		enum TypeToGLTexture = TextureType.Texture2D;
+	} else static if (is (T : Texture3D)) {
+		enum TypeToGLTexture = TextureType.Texture3D;
+	} else {
+		static assert(0, format("unsupported texture type: %s", T.stringof));
 	}
 
 } // TypeToGLTexture
@@ -798,10 +804,14 @@ struct Texture2D {
 
 	}
 
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
+
 	static auto create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
 
 		texture.width_ = width;
 		texture.height_ = height;
+
 		return Texture.create(texture, texture_data.ptr, params);
 
 	} // create
@@ -820,9 +830,33 @@ struct Texture3D {
 
 		Texture texture_;
 
+		uint width_;
+		uint height_;
+
 	}
 
 	alias texture_ this;
+
+	@property
+	nothrow @nogc const {
+
+		uint width() { return width_; }
+		uint height() { return height_; }
+
+	}
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
+
+	static auto create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, int depth, ref TextureParams params) {
+
+		texture.width_ = width;
+		texture.height_ = height;
+		texture.depth_ = depth;
+
+		return Texture.create(texture, texture_data.ptr, params);
+
+	} // create
 
 } // Texture3D
 
@@ -836,6 +870,9 @@ struct Texture1DArray {
 
 	alias texture_ this;
 
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
+
 } // Texture1DArray
 
 struct Texture2DArray {
@@ -847,6 +884,9 @@ struct Texture2DArray {
 	}
 
 	alias texture_ this;
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
 
 } // Texture2DArray
 
