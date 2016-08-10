@@ -631,6 +631,181 @@ struct TextureUnit_ {
 	return TextureUnit_(unit);
 } // TextureUnit
 
+bool hasHeight(TextureType type) {
+	return (type == TextureType.Texture2D || type == TextureType.Texture3D || type == TextureType.Texture1DArray || type == TextureType.Texture2DArray);
+} // hasHeight
+
+bool hasDepth(TextureType type) {
+	return (type == TextureType.Texture3D || type == TextureType.Texture2DArray);
+} // hasDepth
+
+mixin template BaseTexture(TextureType TType) {
+
+	private {
+
+		GLuint handle_;
+		TextureType texture_type_;
+		InternalTextureFormat internal_format_;
+		PixelFormat pixel_format_;
+
+		uint width_;
+		static if (hasHeight(TType)) uint height_;
+		static if (hasDepth(TType)) uint depth_;
+
+	}
+
+	enum Error {
+		Success = "Succesfully created Texture!"
+	} // Error
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
+
+	static if (hasHeight(TType) && hasDepth(TType)) {
+
+		static Error create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, int depth, ref TextureParams params) {
+
+			return create(texture, texture_data.ptr, width, height, depth, params);
+
+		} // create
+
+		static Error create(DataType)(ref typeof(this) texture, in DataType* texture_data, int width, int height, int depth, ref TextureParams params) {
+
+			texture.width_ = width;
+			texture.height_ = height;
+			texture.depth_ = depth;
+
+			return create(texture, texture_data, params);
+
+		} // create
+
+	} else static if (hasHeight(TType)) {
+
+		static Error create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
+
+			return create(texture, texture_data.ptr, width, height, params);
+
+		} // create
+
+		static Error create(DataType)(ref typeof(this) texture, in DataType* texture_data, int width, int height, ref TextureParams params) {
+
+			texture.width_ = width;
+			texture.height_ = height;
+
+			return create(texture, texture_data, params);
+
+		} // create
+
+	} else {
+
+		static Error create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, ref TextureParams params) {
+
+			return create(texture, texture_data, width, params);
+
+		} // create
+
+		static Error create(DataType)(ref typeof(this) texture, in DataType* texture_data, int width, ref TextureParams params) {
+			
+			texture.width_ = width;
+
+			return create(texture, texture_data, params);
+
+		} // create
+
+	}
+
+	nothrow @nogc
+    private static Error create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
+
+        return Texture.create(texture, texture_data.ptr, width, height, params);
+
+    } // create
+
+	nothrow @nogc
+	private static Error create(DataType)(ref typeof(this) texture, in DataType* texture_data, ref TextureParams params) {
+
+		texture.texture_type_ = t_type;
+		texture.internal_format_ = params.internal_format;
+		texture.pixel_format_ = params.pixel_format;
+
+		// begin creation
+		glGenTextures(1, &texture.handle_);
+		Renderer.bindTexture(texture.handle, 0);
+
+		// set texture parameters in currently bound texture, controls texture wrapping (or GL_CLAMP?)
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_S, params.wrapping);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_T, params.wrapping);
+
+		// linearly interpolate between pixels, MIN if texture is too small for drawing area, MAG if drawing area is smaller than texture
+		glTexParameterf(texture.texture_type_, GL_TEXTURE_MIN_FILTER, params.filtering);
+		glTexParameterf(texture.texture_type_, GL_TEXTURE_MAG_FILTER, params.filtering);
+
+		// mipmapping levels
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_BASE_LEVEL, params.mipmap_base_level);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_MAX_LEVEL, params.mipmap_max_level);
+
+		// level of detail
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_MIN_LOD, params.min_lod);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_MAX_LOD, params.max_lod);
+
+		// pixel pack and unpack alignment
+		glPixelStorei(GL_PACK_ALIGNMENT, params.pack_alignment);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, params.unpack_alignment);
+
+		auto data_type = TypeToGL!DataType;
+
+		static if (t_type == TextureType.Texture1D) {
+
+			glTexImage1D(
+				texture.texture_type_,
+				0, // level
+				texture.internal_format_,
+				texture.width_,
+				0, // border
+				texture.pixel_format_,
+				data_type,
+				cast(void*)texture_data
+			);
+
+		} else static if (TType == TextureType.Texture2D || TType == TextureType.Texture1DArray) {
+
+			glTexImage2D(
+				texture.texture_type_,
+				0, // level
+				texture.internal_format_,
+				texture.width_, texture.height_,
+				0, // border
+				texture.pixel_format_,
+				data_type,
+				cast(void*)texture_data
+			);
+
+		} else static if (TType == TextureType.Texture3D || TType == TextureType.Texture2DArray) {
+
+			glTexImage3D(
+				texture.texture_type_,
+				0, // level
+				texture.internal_format_,
+				texture.width_, texture.height_, texture.depth_,
+				0, // border
+				texture.pixel_format_,
+				data_type,
+				cast(void*)texture_data
+			);
+
+		} else {
+
+			import std.string : format;
+			static assert(0, format("unhandled texture type: %s", TType));
+
+		}
+
+		return Error.Success;
+
+	} // create
+
+} // BaseTexture
+
 struct Texture {
 
 	private {
@@ -755,19 +930,33 @@ struct Texture {
 
 struct Texture1D {
 
+	mixin BaseTexture!(TextureType.Texture1D);
+
 } // Texture1D
 
 struct Texture2D {
+
+	mixin BaseTexture!(TextureType.Texture2D);
 
 } // Texture2D
 
 struct Texture3D {
 
+	mixin BaseTexture!(TextureType.Texture3D);
+
 } // Texture3D
 
-struct TextureArray {
+struct Texture1DArray {
 
-} // TextureArray
+	mixin BaseTexture!(TextureType.Texture1DArray);
+
+} // Texture1DArray
+
+struct Texture2DArray {
+
+	mixin BaseTexture!(TextureType.Texture2DArray);
+
+} // Texture2DArray
 
 struct OpaqueTexture {
 
@@ -1439,7 +1628,7 @@ template isFramebuffer(T) {
 template isTexture(T) {
 
 	template isTextureType(IT) {
-		enum isTextureType = (is (IT : Texture) || is (IT : OpaqueTexture) || is (IT : TextureArray));
+		enum isTextureType = (is (IT : Texture) || is (IT : OpaqueTexture) || is (IT : Texture1DArray));
 	} // isTextureType
 
 	import std.traits : isPointer, PointerTarget;
@@ -1890,7 +2079,7 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 
 			import std.traits : getUDAs;
 
-			// currently just a single bind, think about this later
+			// can bind to any texture unit desired, think about if default should be 0, or keep it as explicit
 			alias texture_units = getUDAs!(__traits(getMember, uniforms[0], m), TextureUnit_);
 			static assert(texture_units.length == 1, "expected exactly one @TextureUnit UDA on Texture type!");
 
@@ -1910,10 +2099,10 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 	Renderer.setState(GL_STENCIL_TEST, params.state.stencil_test);
 	Renderer.setState(GL_SCISSOR_TEST, params.state.scissor_test);
 
-	/* TODO: move the below somewhere more sane. */
+	// actions after aforemented glDisable/glEnable
 	if (Renderer.scissor_test) {
-		Renderer.scissor_box = params.state.scissor_box;
 		glScissor(Renderer.scissor_box.expand);
+		Renderer.scissor_box = params.state.scissor_box;
 	}
 
 	if (Renderer.shading_type != params.state.shading_type) {
@@ -1921,7 +2110,6 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 		Renderer.shading_type = params.state.shading_type;
 	}
 
-	// blendaroni, TODO check if already set
 	if (Renderer.blend_test && (Renderer.blend_eq != params.blend_eq || Renderer.blend_src != params.blend_src || Renderer.blend_dst != params.blend_dst)) {
 
 		glBlendEquation(params.blend_eq);
@@ -1932,6 +2120,8 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 		Renderer.blend_eq = params.blend_eq;
 
 	}
+
+	// drawing commands here
 
 	static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
 		glDrawArrays(vao.type_, cast(int)offset, vertex_count);
