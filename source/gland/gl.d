@@ -1406,18 +1406,24 @@ struct RendererState {
 /* Functions for creating structures and such. */
 
 alias DimFunction = int delegate() @nogc nothrow;
+alias SwapFunction = void delegate() @nogc nothrow;
 
 struct Device {
 @nogc nothrow:
 
+	// get device height/width
 	DimFunction width_fn_;
 	DimFunction height_fn_;
+
+	// swap buffers on device
+	SwapFunction swap_fn_;
 
 	@nogc
 	nothrow
 	@property {
 		int width() { return width_fn_(); }
 		int height() { return height_fn_(); }
+		void present() { swap_fn_(); }
 	}
 
 } // Device
@@ -1427,18 +1433,30 @@ template isDevice(T) {
 } // isDevice
 
 template isFramebuffer(T) {
-	static if (is (T : SimpleFramebuffer)) {
-		enum isFramebuffer = true;
+	enum isFramebuffer = is (T : SimpleFramebuffer);
+} //isFramebuffer
+
+template isTexture(T) {
+
+	template isTextureType(IT) {
+		enum isTextureType = (is (IT : Texture) || is (IT : OpaqueTexture) || is (IT : TextureArray));
+	} // isTextureType
+
+	import std.traits : isPointer, PointerTarget;
+	static if (isPointer!T) {
+		alias PT = PointerTarget!T;
+		enum isTexture = isTextureType!(PointerTarget!T);
 	} else {
-		enum isFramebuffer = false;
+		enum isTexture = isTextureType!T;
 	}
-} // isFramebuffer
+
+} // isTexture
 
 struct Renderer {
 static:
 
-	static Device createDevice(DimFunction w, DimFunction h) {
-		return typeof(return)(w, h);
+	static Device createDevice(DimFunction w, DimFunction h, SwapFunction s) {
+		return typeof(return)(w, h, s);
 	} // createDevice
 
 	/**
@@ -1868,7 +1886,7 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 		 * Textures
 		*/
 
-		} else static if (is (T : Texture*) || is(T : OpaqueTexture*)) {
+		} else static if (isTexture!T) {
 
 			import std.traits : getUDAs;
 

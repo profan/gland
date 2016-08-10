@@ -134,8 +134,8 @@ void main() {
 	Window.load();
 
 	Window window;
-	auto result = Window.create(window, 640, 480);
-	auto device = Renderer.createDevice(&window.width, &window.height);
+	auto result = Window.create(window, 1920, 1080);
+	auto device = Renderer.createDevice(&window.width, &window.height, &window.present);
 
 	// go fullscreena
 	window.setFullscreen();

@@ -195,18 +195,21 @@ struct Window {
 		} //openGLCallbackFunction		
 	}
 
+	nothrow @nogc
 	void present() {
 
 		SDL_GL_SwapWindow(window_);
 
 	} // present
 
+	nothrow @nogc
 	bool isKeyDown(SDL_Scancode key) {
 
 		return cast(bool)keyboard_[key];
 
 	} // isKeyDown
 
+	nothrow @nogc
 	auto getMousePosition() {
 
 		int x, y;
@@ -216,6 +219,7 @@ struct Window {
 
 	} // getMousePosition
 
+	nothrow @nogc
 	void handleEvents() {
 
 		SDL_Event ev;
