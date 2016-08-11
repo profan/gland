@@ -1528,7 +1528,7 @@ mixin template RendererStateVars() {
 	bool line_smooth;
 
 	//GL_MULTISAMPLE
-	// ... TODO
+	bool multisample;
 
 	//GL_SHADE_MODEL
 	ShadingType shading_type;
@@ -1686,7 +1686,8 @@ private:
 				GL_CULL_FACE, cull_face,
 				GL_DEPTH_TEST, depth_test,
 				GL_STENCIL_TEST, stencil_test,
-				GL_SCISSOR_TEST, scissor_test
+				GL_SCISSOR_TEST, scissor_test,
+				GL_MULTISAMPLE, multisample
 			);
 
 			/**
@@ -2047,6 +2048,7 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 	Renderer.setState(GL_DEPTH_TEST, params.state.depth_test);
 	Renderer.setState(GL_STENCIL_TEST, params.state.stencil_test);
 	Renderer.setState(GL_SCISSOR_TEST, params.state.scissor_test);
+	Renderer.setState(GL_MULTISAMPLE, params.state.multisample);
 
 	// actions after aforemented glDisable/glEnable
 	if (Renderer.scissor_test) {
