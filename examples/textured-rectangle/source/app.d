@@ -8,7 +8,7 @@ import gland.util;
 import gland.win;
 import gland.gl;
 
-immutable char* vs_shader = "
+immutable char* vs_shader = q{
 	#version 330 core
 
 	layout (location = 0) in vec2 position;
@@ -22,9 +22,9 @@ immutable char* vs_shader = "
 		gl_Position = vec4(position + offset, 0.0, 1.0);
 		tex_coord = uv;
 	}
-";
+};
 
-immutable char* fs_shader = "
+immutable char* fs_shader = q{
 	#version 330 core
 
 	in vec2 tex_coord;
@@ -36,7 +36,7 @@ immutable char* fs_shader = "
 	void main() {
 		f_colour = texture2D(diffuse, tex_coord);
 	}
-";
+};
 
 alias Mat4f = float[4][4];
 
@@ -132,7 +132,7 @@ void main() {
 		internal_format : InternalTextureFormat.R8,
 		pixel_format : PixelFormat.Red
 	};
-	auto texture_result = Texture2D.create(texture, texture_data[], sections, sections, texture_params);
+	auto texture_result = Texture2D.create(texture, texture_data.ptr, sections, sections, texture_params);
 
 	// declare vertex data
 	Vertex2f2f[6] vertices = [

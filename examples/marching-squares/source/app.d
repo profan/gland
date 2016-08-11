@@ -8,7 +8,7 @@ import gland.util;
 import gland.win;
 import gland.gl;
 
-immutable char* ms_vs = "
+immutable char* ms_vs = q{
 	#version 330 core
 
 	layout (location = 0) in vec2 position;
@@ -17,9 +17,9 @@ immutable char* ms_vs = "
 		gl_Position = vec4(position, 0.0, 1.0);
 	}
 
-";
+};
 
-immutable char* ms_gs = "
+immutable char* ms_gs = q{
 	#version 330 core
 
 	layout (points) in;
@@ -502,9 +502,9 @@ immutable char* ms_gs = "
 
 	}
 
-";
+};
 
-immutable char* ms_fs = "
+immutable char* ms_fs = q{
 	#version 330 core
 
 	in vec3 gs_colour;
@@ -514,7 +514,7 @@ immutable char* ms_fs = "
 	void main() {
 		f_colour = gs_colour;
 	}
-";
+};
 
 alias Vec2f = float[2];
 alias Mat4f = float[4][4];
@@ -575,7 +575,7 @@ struct MapData {
 
 alias MapVao = VertexArrayT!MapData;
 
-immutable char* ts_vs = "
+immutable char* ts_vs = q{
 	#version 330 core
 
 	layout (location = 0) in vec2 position;
@@ -587,9 +587,9 @@ immutable char* ts_vs = "
 		gl_Position = vec4(position, 0.0, 1.0);
 		tex_coord = uv;
 	}
-";
+};
 
-immutable char* ts_fs = "
+immutable char* ts_fs = q{
 	#version 330 core
 
 	in vec2 tex_coord;
@@ -601,7 +601,7 @@ immutable char* ts_fs = "
 	void main() {
 		f_colour = vec4(texture2D(diffuse, tex_coord).r, 0.0, 0.0, 1.0);
 	}
-";
+};
 
 struct TextureUniform {
 

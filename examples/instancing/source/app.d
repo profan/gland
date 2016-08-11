@@ -8,7 +8,7 @@ import gland.util;
 import gland.win;
 import gland.gl;
 
-immutable char* vs_shader = "
+immutable char* vs_shader = q{
 	#version 330 core
 
 	layout (location = 0) in vec2 position;
@@ -21,9 +21,9 @@ immutable char* vs_shader = "
 		gl_Position = vec4(position + offset, 0.0, 1.0);
 		v_colour = colour;
 	}
-";
+};
 
-immutable char* fs_shader = "
+immutable char* fs_shader = q{
 	#version 330 core
 
 	in vec3 v_colour;
@@ -32,9 +32,7 @@ immutable char* fs_shader = "
 	void main() {
 		f_colour = vec4(v_colour, 1.0);
 	}
-";
-
-alias Mat4f = float[4][4];
+};
 
 alias InstanceShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.FragmentShader], [
@@ -45,10 +43,8 @@ alias InstanceShader = Shader!(
 );
 
 struct Vertex2f3f {
-
 	float[2] position;
 	float[3] colour;
-
 } // Vertex2f3f
 
 @(DrawType.DrawArraysInstanced)

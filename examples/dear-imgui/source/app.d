@@ -25,7 +25,7 @@ auto bindDelegate(T, string file = __FILE__, size_t line = __LINE__)(T t) if(isD
 
 } // bindDelegate (thanks Destructionator)
 
-immutable char* vs_source = "
+immutable char* vs_source = q{
 	#version 330 core
 
 	uniform mat4 ProjMtx;
@@ -42,9 +42,9 @@ immutable char* vs_source = "
 		Frag_Color = Color;
 		gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
 	}
-";
+};
 
-immutable char* fs_source = "
+immutable char* fs_source = q{
 	#version 330 core
 
 	uniform sampler2D Texture_;
@@ -57,7 +57,7 @@ immutable char* fs_source = "
 	void main() {
 		Out_Color = Frag_Color * texture(Texture_, Frag_UV.st);
 	}
-";
+};
 
 struct ImguiUniform {
 
