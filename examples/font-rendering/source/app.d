@@ -51,7 +51,7 @@ struct TextUniform {
 	float[4] colour;
 
 	@TextureUnit(0)
-	Texture* tex;
+	Texture2D* tex;
 
 } // TextUniform
 
@@ -106,7 +106,7 @@ struct FontAtlas {
 
 		TextVao vertices_;
 		TextShader shader_;
-		Texture texture_;
+		Texture2D texture_;
 
 		CharacterInfo[96] chars_;
 
@@ -192,7 +192,7 @@ struct FontAtlas {
 			wrapping : TextureWrapping.ClampToEdge
 		};
 
-		auto texture_result = Texture.create(atlas.texture_, null, w, h, params);
+		auto texture_result = Texture2D.create(atlas.texture_, cast(ubyte*)null, w, h, params);
 
 		int x = 0; // current x position in the resulting texture to write to
 		for (uint i = 32; i < 128; ++i) {
@@ -316,7 +316,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
-	auto device = Renderer.createDevice(&window.width, &window.height);
+	auto device = Renderer.createDevice(&window.width, &window.height, &window.present);
 
 	final switch (result) with (Window.Error) {
 
@@ -376,7 +376,7 @@ void main() {
 		Mat4f[1] projection_data = [transposed_projection];
 		text_atlas.renderText(device, projection_data[], "Hello, World!", window.width / 4, window.height / 2, 1.0f, 1.0f, 0xffa500);
 
-		window.present();
+		device.present();
 
 	}
 

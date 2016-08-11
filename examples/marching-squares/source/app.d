@@ -8,7 +8,7 @@ import gland.util;
 import gland.win;
 import gland.gl;
 
-immutable char* ms_vs = "
+immutable char* ms_vs = q{
 	#version 330 core
 
 	layout (location = 0) in vec2 position;
@@ -17,9 +17,9 @@ immutable char* ms_vs = "
 		gl_Position = vec4(position, 0.0, 1.0);
 	}
 
-";
+};
 
-immutable char* ms_gs = "
+immutable char* ms_gs = q{
 	#version 330 core
 
 	layout (points) in;
@@ -502,9 +502,9 @@ immutable char* ms_gs = "
 
 	}
 
-";
+};
 
-immutable char* ms_fs = "
+immutable char* ms_fs = q{
 	#version 330 core
 
 	in vec3 gs_colour;
@@ -514,7 +514,7 @@ immutable char* ms_fs = "
 	void main() {
 		f_colour = gs_colour;
 	}
-";
+};
 
 alias Vec2f = float[2];
 alias Mat4f = float[4][4];
@@ -550,10 +550,17 @@ immutable Height[GridSize][GridSize] grid = [
 
 ];
 
+struct MapUniform {
+
+	@TextureUnit(0)
+	Texture2D* texture_map;
+
+} // MapUniform
+
 alias MapShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.GeometryShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0)
-	], Texture*, "texture_map"
+	], MapUniform
 );
 
 @(DrawType.DrawArrays)
@@ -568,7 +575,7 @@ struct MapData {
 
 alias MapVao = VertexArrayT!MapData;
 
-immutable char* ts_vs = "
+immutable char* ts_vs = q{
 	#version 330 core
 
 	layout (location = 0) in vec2 position;
@@ -580,9 +587,9 @@ immutable char* ts_vs = "
 		gl_Position = vec4(position, 0.0, 1.0);
 		tex_coord = uv;
 	}
-";
+};
 
-immutable char* ts_fs = "
+immutable char* ts_fs = q{
 	#version 330 core
 
 	in vec2 tex_coord;
@@ -594,13 +601,20 @@ immutable char* ts_fs = "
 	void main() {
 		f_colour = vec4(texture2D(diffuse, tex_coord).r, 0.0, 0.0, 1.0);
 	}
-";
+};
+
+struct TextureUniform {
+
+	@TextureUnit(0)
+	Texture2D* diffuse;
+
+} // TextureUniform
 
 alias TextureShader = Shader!(
 	[ShaderType.VertexShader, ShaderType.FragmentShader], [
 		AttribTuple("position", 0),
 		AttribTuple("uv", 1)
-	], Texture*, "diffuse"
+	], TextureUniform
 );
 
 struct Vertex2f2f {
@@ -620,7 +634,7 @@ struct VertexData {
 
 alias TextureVao = VertexArrayT!VertexData;
 
-Texture generateMapTexture(ref in Height[GridSize][GridSize] cells) {
+Texture2D generateMapTexture(ref in Height[GridSize][GridSize] cells) {
 
 	TextureParams params = {
 		internal_format : InternalTextureFormat.R8,
@@ -631,8 +645,8 @@ Texture generateMapTexture(ref in Height[GridSize][GridSize] cells) {
 		mipmap_max_level : 0
 	};
 
-	Texture new_texture;
-	auto texture_result = Texture.create(new_texture, cast(ubyte*)cells.ptr, GridSize, GridSize, params);
+	Texture2D new_texture;
+	auto texture_result = Texture2D.create(new_texture, cast(ubyte*)cells.ptr, GridSize, GridSize, params);
 
 	return new_texture;
 
@@ -645,6 +659,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
+	auto device = Renderer.createDevice(&window.width, &window.height, &window.present);
 
 	final switch (result) with (Window.Error) {
 
@@ -661,12 +676,12 @@ void main() {
 	}
 
 	// framebuffer texture
-	Texture fb_texture;
+	Texture2D fb_texture;
 	TextureParams params = {
 		internal_format : InternalTextureFormat.RGB,
 		pixel_format : PixelFormat.RGB
 	};
-	auto fb_tex_result = Texture.create(fb_texture, null, window.width, window.height, params);
+	auto fb_tex_result = Texture2D.create(fb_texture, cast(ubyte*)null, window.width, window.height, params);
 
 	// create fb with texture	
 	SimpleFramebuffer sfb;
@@ -735,13 +750,16 @@ void main() {
 		// default state, holds all OpenGL state params like blend state etc to be use for given draw call
 		DrawParams draw_params = {};
 
-		Renderer.clearColour(sfb, 0xffa500);
-		Renderer.draw(sfb, map_shader, vao, draw_params, &map_texture);
+		sfb.clearColour(0xffa500);
+
+		auto map_uniform = MapUniform(&map_texture);
+		sfb.draw(map_shader, vao, draw_params, map_uniform);
 
 		// cornflower blue, of course
-		Renderer.draw(tex_shader, tex_vao, draw_params, &fb_texture);
+		auto tex_uniform = TextureUniform(&fb_texture);
+		device.draw(tex_shader, tex_vao, draw_params, tex_uniform);
 
-		window.present();
+		device.present();
 
 	}
 
