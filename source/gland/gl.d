@@ -809,9 +809,16 @@ struct Texture2D {
 	@disable ref typeof(this) opAssign(ref typeof(this));
 
 	nothrow @nogc
+	static auto create(DataType)(ref typeof(this) texture, int width, int height, ref TextureParams params) {
+
+		return Texture2D.create(texture, cast(DataType*)null, width, height, params);
+
+	} // create
+
+	nothrow @nogc
 	static auto create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
 
-		return Texture2D.create(texture, texture_data.ptr, params);
+		return Texture2D.create(texture, texture_data.ptr, width, height, params);
 
 	} // create
 
