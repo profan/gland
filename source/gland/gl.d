@@ -808,12 +808,14 @@ struct Texture2D {
 	@disable this(this);
 	@disable ref typeof(this) opAssign(ref typeof(this));
 
+	nothrow @nogc
 	static auto create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
 
 		return Texture2D.create(texture, texture_data.ptr, params);
 
 	} // create
 
+	nothrow @nogc
 	static auto create(DataType)(ref typeof(this) texture, in DataType* texture_data, int width, int height, ref TextureParams params) {
 
 		texture.width_ = width;
@@ -823,6 +825,15 @@ struct Texture2D {
 
 	} // create
 
+	nothrow @nogc
+	void update(int x_offset, int y_offset, int width, int height, in ubyte* bytes) {
+
+		Renderer.bindTexture(texture_.handle_, 0);
+		glTexSubImage2D(texture_.texture_type_, 0, x_offset, y_offset, width, height, texture_.pixel_format_, TypeToGL!ubyte, bytes);
+
+	} // update
+
+	nothrow @nogc
 	SimpleFramebuffer.Error asSurface(ref SimpleFramebuffer buffer, bool with_depth_buffer) {
 
 		return SimpleFramebuffer.create(buffer, this, with_depth_buffer);
