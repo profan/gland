@@ -777,9 +777,29 @@ struct Texture1D {
 
 		Texture texture_;
 
+		uint width_;
+
 	}
 
 	alias texture_ this;
+
+	@property
+	nothrow @nogc const {
+
+		uint width() { return width_; }
+		GLuint handle() { return texture_.handle; }
+
+	}
+
+	@disable this(this);
+	@disable ref typeof(this) opAssign(ref typeof(this));
+
+	nothrow @nogc
+	static auto create(DataType)(ref Texture1D texture, in DataType* texture_data, int width, ref TextureParams params) {
+
+		return Texture.create(texture, texture_data, params);
+
+	} // create
 
 } // Texture1D
 
@@ -809,21 +829,21 @@ struct Texture2D {
 	@disable ref typeof(this) opAssign(ref typeof(this));
 
 	nothrow @nogc
-	static auto create(DataType)(ref typeof(this) texture, int width, int height, ref TextureParams params) {
+	static auto create(DataType)(ref Texture2D texture, int width, int height, ref TextureParams params) {
 
 		return Texture2D.create(texture, cast(DataType*)null, width, height, params);
 
 	} // create
 
 	nothrow @nogc
-	static auto create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
+	static auto create(DataType)(ref Texture2D texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
 
 		return Texture2D.create(texture, texture_data.ptr, width, height, params);
 
 	} // create
 
 	nothrow @nogc
-	static auto create(DataType)(ref typeof(this) texture, in DataType* texture_data, int width, int height, ref TextureParams params) {
+	static auto create(DataType)(ref Texture2D texture, in DataType* texture_data, int width, int height, ref TextureParams params) {
 
 		texture.width_ = width;
 		texture.height_ = height;
@@ -874,7 +894,7 @@ struct Texture3D {
 	@disable this(this);
 	@disable ref typeof(this) opAssign(ref typeof(this));
 
-	static auto create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, int depth, ref TextureParams params) {
+	static auto create(DataType)(ref Texture3D texture, in DataType[] texture_data, int width, int height, int depth, ref TextureParams params) {
 
 		texture.width_ = width;
 		texture.height_ = height;
