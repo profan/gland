@@ -631,28 +631,6 @@ struct TextureUnit_ {
 	return TextureUnit_(unit);
 } // TextureUnit
 
-bool hasHeight(TextureType type) {
-	return (type == TextureType.Texture2D || type == TextureType.Texture3D || type == TextureType.Texture1DArray || type == TextureType.Texture2DArray);
-} // hasHeight
-
-bool hasDepth(TextureType type) {
-	return (type == TextureType.Texture3D || type == TextureType.Texture2DArray);
-} // hasDepth
-
-template TypeToGLTexture(T) {
-
-	import std.string : format;
-
-	static if (is (T : Texture2D)) {
-		enum TypeToGLTexture = TextureType.Texture2D;
-	} else static if (is (T : Texture3D)) {
-		enum TypeToGLTexture = TextureType.Texture3D;
-	} else {
-		static assert(0, format("unsupported texture type: %s", T.stringof));
-	}
-
-} // TypeToGLTexture
-
 struct Texture {
 
 	private {
@@ -680,7 +658,7 @@ struct Texture {
 	nothrow @nogc
 	private static Error create(T, DataType)(ref T texture, in DataType* texture_data, ref TextureParams params) {
 
-		enum TType = TypeToGLTexture!T;
+		enum TType = T.Type;
 
 		texture.texture_type_ = TType;
 		texture.internal_format_ = params.internal_format;
@@ -773,6 +751,8 @@ struct Texture {
 
 struct Texture1D {
 
+	enum Type = TextureType.Texture1D;
+
 	private {
 
 		Texture texture_;
@@ -804,6 +784,8 @@ struct Texture1D {
 } // Texture1D
 
 struct Texture2D {
+
+	enum Type = TextureType.Texture2D;
 
 	private {
 
@@ -871,6 +853,8 @@ struct Texture2D {
 
 struct Texture3D {
 
+	enum Type = TextureType.Texture3D;
+
 	private {
 
 		Texture texture_;
@@ -916,6 +900,8 @@ struct Texture3D {
 
 struct Texture1DArray {
 
+	enum Type = TextureType.Texture1DArray;
+
 	private {
 
 		Texture texture_;
@@ -950,6 +936,8 @@ struct Texture1DArray {
 } // Texture1DArray
 
 struct Texture2DArray {
+
+	enum Type = TextureType.Texture2DArray;
 
 	private {
 
