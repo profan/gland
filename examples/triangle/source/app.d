@@ -43,10 +43,8 @@ alias TriangleShader = Shader!(
 );
 
 struct Vertex2f3f {
-
 	float[2] position;
 	float[3] colour;
-
 } // Vertex2f3f
 
 @(DrawType.DrawArrays)
@@ -68,7 +66,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
-	auto device = Renderer.createDevice(&window.width, &window.height);
+	auto device = Renderer.createDevice(&window.width, &window.height, &window.present);
 
 	final switch (result) with (Window.Error) {
 
@@ -123,7 +121,7 @@ void main() {
 		device.clearColour(0x428bca);
 		device.draw(triangle_shader, vao, params);
 
-		window.present();
+		device.present();
 
 	}
 

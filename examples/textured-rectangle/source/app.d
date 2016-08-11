@@ -170,7 +170,7 @@ void main() {
 		auto uniform_data = TextureUniform([-0.5, -0.5], &texture);
 		device.draw(texture_shader, vao, params, uniform_data);
 
-		window.present();
+		device.present();
 
 	}
 

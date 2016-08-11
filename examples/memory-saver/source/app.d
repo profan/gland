@@ -250,7 +250,7 @@ void main() {
 		device.draw(texture_shader, rect_vao, params, uniform_data);
 
 
-		window.present();
+		device.present();
 
 	}
 
