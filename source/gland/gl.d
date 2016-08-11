@@ -796,7 +796,7 @@ struct Texture2D {
 
 	alias texture_ this;
 
-	@property 
+	@property
 	nothrow @nogc const {
 
 		uint width() { return width_; }
@@ -860,6 +860,7 @@ struct Texture3D {
 
 		uint width() { return width_; }
 		uint height() { return height_; }
+		GLuint handle() { return texture_.handle; }
 
 	}
 
@@ -876,6 +877,14 @@ struct Texture3D {
 
 	} // create
 
+	nothrow @nogc
+	void update(int x_offset, int y_offset, int z_offset, int width, int height, int depth, in ubyte* bytes) {
+
+		Renderer.bindTexture(texture_.handle_, 0);
+		glTexSubImage3D(texture_.texture_type_, 0, x_offset, y_offset, z_offset, width, height, depth, texture_.pixel_format_, TypeToGL!ubyte, bytes);
+
+	} // update
+
 } // Texture3D
 
 struct Texture1DArray {
@@ -884,12 +893,32 @@ struct Texture1DArray {
 
 		Texture texture_;
 
+		uint width_;
+		uint height_;
+
 	}
 
 	alias texture_ this;
 
+	@property
+	nothrow @nogc const {
+
+		uint width() { return width_; }
+		uint height() { return height_; }
+		GLuint handle() { return texture_.handle; }
+
+	}
+
 	@disable this(this);
 	@disable ref typeof(this) opAssign(ref typeof(this));
+
+	nothrow @nogc
+	void update(int x_offset, int y_offset, int z_offset, int width, int height, int depth, in ubyte* bytes) {
+
+		Renderer.bindTexture(texture_.handle_, 0);
+		glTexSubImage2D(texture_.texture_type_, 0, x_offset, y_offset, width, height, texture_.pixel_format_, TypeToGL!ubyte, bytes);
+
+	} // update
 
 } // Texture1DArray
 
@@ -899,12 +928,34 @@ struct Texture2DArray {
 
 		Texture texture_;
 
+		uint width_;
+		uint height_;
+		uint depth_;
+
 	}
 
 	alias texture_ this;
 
+	@property
+	nothrow @nogc const {
+
+		uint width() { return width_; }
+		uint height() { return height_; }
+		uint depth() { return depth_; }
+		GLuint handle() { return texture_.handle; }
+
+	}
+
 	@disable this(this);
 	@disable ref typeof(this) opAssign(ref typeof(this));
+
+	nothrow @nogc
+	void update(int x_offset, int y_offset, int z_offset, int width, int height, int depth, in ubyte* bytes) {
+
+		Renderer.bindTexture(texture_.handle_, 0);
+		glTexSubImage3D(texture_.texture_type_, 0, x_offset, y_offset, z_offset, width, height, depth, texture_.pixel_format_, TypeToGL!ubyte, bytes);
+
+	} // update
 
 } // Texture2DArray
 
