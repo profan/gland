@@ -120,7 +120,7 @@ struct ImguiContext {
 
 		// graffix data
 		ImguiShader shader_;
-		Texture texture_;
+		Texture2D texture_;
 		ImguiVao vao_;
 
 		double time_;
@@ -253,7 +253,7 @@ struct ImguiContext {
 			filtering : TextureFiltering.Linear
 		};
 
-		Texture.create(texture_, pixels, width, height, tex_params);
+		auto tex_result = Texture2D.create(texture_, pixels, width, height, tex_params);
 		ImFontAtlas_SetTexID(io.Fonts, cast(void*)texture_.handle);
 
 	} // createFontTexture

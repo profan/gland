@@ -45,7 +45,7 @@ struct TextureUniform {
 	float[2] offset;
 
 	@TextureUnit(0)
-	Texture* diffuse;
+	Texture2D* diffuse;
 
 } // TextureUniform
 
@@ -82,7 +82,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
-	auto device = Renderer.createDevice(&window.width, &window.height);
+	auto device = Renderer.createDevice(&window.width, &window.height, &window.present);
 
 	final switch (result) with (Window.Error) {
 
@@ -125,14 +125,14 @@ void main() {
 
 	// create a simple checkered texture
 
-	Texture texture;
+	Texture2D texture;
 	immutable uint sections = 8;
 	auto texture_data = checkerboard!sections(255, 0);
 	TextureParams texture_params = {
 		internal_format : InternalTextureFormat.R8,
 		pixel_format : PixelFormat.Red
 	};
-	auto texture_result = Texture.create(texture, texture_data[], sections, sections, texture_params);
+	auto texture_result = Texture2D.create(texture, texture_data[], sections, sections, texture_params);
 
 	// declare vertex data
 	Vertex2f2f[6] vertices = [

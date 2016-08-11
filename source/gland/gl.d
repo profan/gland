@@ -327,7 +327,7 @@ alias AttribTuple = Tuple!(string, "identifier", int, "offset");
 struct Shader(immutable ShaderType[] shader_types, immutable AttribTuple[] attributes, UniformStructType...) {
 
 	import std.string : format;
-	static assert(UniformStructType.length == 0 || UniformStructType.length == 1);
+	static assert(UniformStructType.length == 0 || UniformStructType.length == 1, "expected either no uniform struct, or a single struct.");
 
 	static if (UniformStructType.length == 1) {
 		alias UniformStruct = UniformStructType[0];
@@ -801,6 +801,7 @@ struct Texture2D {
 
 		uint width() { return width_; }
 		uint height() { return height_; }
+		GLuint handle() { return texture_.handle; }
 
 	}
 
@@ -809,10 +810,16 @@ struct Texture2D {
 
 	static auto create(DataType)(ref typeof(this) texture, in DataType[] texture_data, int width, int height, ref TextureParams params) {
 
+		return Texture2D.create(texture, texture_data.ptr, params);
+
+	} // create
+
+	static auto create(DataType)(ref typeof(this) texture, in DataType* texture_data, int width, int height, ref TextureParams params) {
+
 		texture.width_ = width;
 		texture.height_ = height;
 
-		return Texture.create(texture, texture_data.ptr, params);
+		return Texture.create(texture, texture_data, params);
 
 	} // create
 
