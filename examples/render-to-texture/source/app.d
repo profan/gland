@@ -8,7 +8,7 @@ import gland.util;
 import gland.win;
 import gland.gl;
 
-immutable char* vs_shader = "
+immutable char* vs_shader = q{
 	#version 330
 
 	layout (location = 0) in vec2 position;
@@ -20,9 +20,9 @@ immutable char* vs_shader = "
 		gl_Position = vec4(position, 0.0, 1.0);
 		v_colour = colour;
 	}
-";
+};
 
-immutable char* fs_shader = "
+immutable char* fs_shader = q{
 	#version 330
 
 	in vec3 v_colour;
@@ -31,9 +31,9 @@ immutable char* fs_shader = "
 	void main() {
 		f_colour = vec4(v_colour, 1.0);
 	}
-";
+};
 
-immutable char* tex_vs_shader = "
+immutable char* tex_vs_shader = q{
     #version 330 core
 
     layout (location = 0) in vec2 position;
@@ -45,9 +45,9 @@ immutable char* tex_vs_shader = "
         gl_Position = vec4(position, 0.0, 1.0);
         tex_coord = uv;
     }
-";
+};
 
-immutable char* tex_fs_shader = "
+immutable char* tex_fs_shader = q{
     #version 330 core
 
     in vec2 tex_coord;
@@ -59,7 +59,7 @@ immutable char* tex_fs_shader = "
     void main() {
         f_colour = texture2D(diffuse, tex_coord);
     }
-";
+};
 
 alias Mat4f = float[4][4];
 
@@ -73,7 +73,7 @@ alias TriangleShader = Shader!(
 struct TextureUniform {
 
 	@TextureUnit(0)
-	Texture* diffuse;
+	Texture2D* diffuse;
 
 } // TextureUniform
 
@@ -129,7 +129,7 @@ void main() {
 
 	Window window;
 	auto result = Window.create(window, 640, 480);
-	auto device = Renderer.createDevice(&window.width, &window.height);
+	auto device = Renderer.createDevice(&window.width, &window.height, &window.present);
 
 	final switch (result) with (Window.Error) {
 
@@ -150,12 +150,12 @@ void main() {
 	int texture_h = window.height / 8;
 
 	// create texture to render to
-	Texture framebuffer_texture;
+	Texture2D framebuffer_texture;
 	TextureParams tex_params = {
 		internal_format : InternalTextureFormat.RGB,
 		pixel_format : PixelFormat.RGB
 	};
-	auto texture_result = Texture.create(framebuffer_texture, null, texture_w, texture_h, tex_params);
+	auto texture_result = Texture2D.create(framebuffer_texture, null, texture_w, texture_h, tex_params);
 	
 	// create a frame buffer from this texture
 	SimpleFramebuffer frame_buffer;
@@ -227,7 +227,7 @@ void main() {
 		auto uniform_data = TextureUniform(&framebuffer_texture);
 		device.draw(texture_shader, rect_vao, params, uniform_data);
 
-		window.present();
+		device.present();
 
 	}
 
