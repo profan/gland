@@ -666,7 +666,7 @@ struct Texture {
 
 		// begin creation
 		glGenTextures(1, &texture.handle_);
-		Renderer.bindTexture(texture.handle, 0);
+		Renderer.bindTexture(texture.handle, texture.texture_type_, 0);
 
 		// set texture parameters in currently bound texture, controls texture wrapping (or GL_CLAMP?)
 		glTexParameteri(texture.texture_type_, GL_TEXTURE_WRAP_S, params.wrapping);
@@ -837,7 +837,7 @@ struct Texture2D {
 	nothrow @nogc
 	void update(int x_offset, int y_offset, int width, int height, in ubyte* bytes) {
 
-		Renderer.bindTexture(texture_.handle_, 0);
+		Renderer.bindTexture(texture_.handle_, Type, 0);
 		glTexSubImage2D(texture_.texture_type_, 0, x_offset, y_offset, width, height, texture_.pixel_format_, TypeToGL!ubyte, bytes);
 
 	} // update
@@ -891,7 +891,7 @@ struct Texture3D {
 	nothrow @nogc
 	void update(int x_offset, int y_offset, int z_offset, int width, int height, int depth, in ubyte* bytes) {
 
-		Renderer.bindTexture(texture_.handle_, 0);
+		Renderer.bindTexture(texture_.handle_, Type, 0);
 		glTexSubImage3D(texture_.texture_type_, 0, x_offset, y_offset, z_offset, width, height, depth, texture_.pixel_format_, TypeToGL!ubyte, bytes);
 
 	} // update
@@ -928,7 +928,7 @@ struct Texture1DArray {
 	nothrow @nogc
 	void update(int x_offset, int y_offset, int z_offset, int width, int height, int depth, in ubyte* bytes) {
 
-		Renderer.bindTexture(texture_.handle_, 0);
+		Renderer.bindTexture(texture_.handle_, Type, 0);
 		glTexSubImage2D(texture_.texture_type_, 0, x_offset, y_offset, width, height, texture_.pixel_format_, TypeToGL!ubyte, bytes);
 
 	} // update
@@ -967,7 +967,7 @@ struct Texture2DArray {
 	nothrow @nogc
 	void update(int x_offset, int y_offset, int z_offset, int width, int height, int depth, in ubyte* bytes) {
 
-		Renderer.bindTexture(texture_.handle_, 0);
+		Renderer.bindTexture(texture_.handle_, Type, 0);
 		glTexSubImage3D(texture_.texture_type_, 0, x_offset, y_offset, z_offset, width, height, depth, texture_.pixel_format_, TypeToGL!ubyte, bytes);
 
 	} // update
@@ -1834,11 +1834,11 @@ private:
 	} // isAnyBound
 
 	nothrow @nogc
-	void bindTexture(GLuint texture_handle, uint unit) {
+	void bindTexture(GLuint texture_handle, TextureType type, uint unit) {
 
 		if (texture_binding_2d[unit] != texture_handle) {
 			glActiveTexture(GL_TEXTURE0 + unit);
-			glBindTexture(GL_TEXTURE_2D, texture_handle);
+			glBindTexture(type, texture_handle);
 			texture_binding_2d[unit] = texture_handle;
 		}
 
@@ -2099,7 +2099,7 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 			alias texture_units = getUDAs!(__traits(getMember, uniforms[0], m), TextureUnit_);
 			static assert(texture_units.length == 1, "expected exactly one @TextureUnit UDA on Texture type!");
 
-			Renderer.bindTexture(__traits(getMember, uniforms[0], m).handle, texture_units[0].unit);
+			Renderer.bindTexture(__traits(getMember, uniforms[0], m).handle, __traits(getMember, uniforms[0], m).Type, texture_units[0].unit);
 
 		}
 
