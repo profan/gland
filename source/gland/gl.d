@@ -1990,7 +1990,7 @@ void draw_offset(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref D
 			draw_with_offset(shader, vao, params, vertex_count, offset, uniform);
 		}
 
-}
+} // draw_offset
 
 nothrow @nogc
 void draw(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, ref UniformTypes uniform)
@@ -2008,7 +2008,7 @@ void draw(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceTy
 		draw(shader, vao, params, uniform);
 	}
 
-}
+} // draw
 
 nothrow @nogc
 void draw(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, ref UniformTypes uniform) {
@@ -2179,4 +2179,4 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 		glDrawElementsInstanced(vao.type_, vao.num_vertices_, vao.draw_type_, 0);
 	}
 
-} // draw
+} // draw_with_offset
