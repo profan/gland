@@ -165,7 +165,8 @@ void main() {
 		DrawParams params = {};
 
 		// cornflower blue, of course
-		device.clearColour(0x428bca);
+		ClearParams clear_params = { colour: to!GLColour(0x428bca) };
+		device.clear(clear_params);
 
 		auto uniform_data = TextureUniform([-0.5, -0.5], &texture);
 		device.draw(texture_shader, vao, params, uniform_data);

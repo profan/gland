@@ -315,7 +315,7 @@ struct ImguiContext {
 					);
 			
 					// temporary opaque texture
-					OpaqueTexture cur_texture = Texture.fromId(cast(uint)pcmd.TextureId);
+					OpaqueTexture cur_texture = Texture.fromId(cast(uint)pcmd.TextureId, TextureType.Texture2D);
 					auto uniform_data = ImguiUniform(proj_data[], &cur_texture);
 					(*device_).draw_offset(shader_, vao_, draw_params, pcmd.ElemCount, idx_buffer_offset, uniform_data);
 					

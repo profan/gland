@@ -251,6 +251,14 @@ struct TDrawParams {
 
 } // TDrawParams
 
+struct ClearParams {
+
+	float[4] colour;
+	bool stencil;
+	bool depth;
+
+} // ClearParams
+
 nothrow @nogc
 bool checkShaderError(GLuint shader, GLuint flag, bool is_program) {
 
@@ -741,9 +749,9 @@ struct Texture {
 	} // create
 
 	@nogc nothrow
-	static OpaqueTexture fromId(GLuint id) {
+	static OpaqueTexture fromId(GLuint id, TextureType type) {
 
-		return OpaqueTexture(id);
+		return OpaqueTexture(id, type);
 
 	} // fromId
 
@@ -978,6 +986,7 @@ struct OpaqueTexture {
 
 	private {
 		GLuint handle_;
+		TextureType texture_type_;
 	}
 
 	@nogc nothrow
@@ -1938,6 +1947,23 @@ private:
 } // Renderer
 
 nothrow @nogc
+void clear(DeviceType)(ref DeviceType device, auto ref ClearParams params)
+	if (isDevice!DeviceType) {
+
+	static if (isFramebuffer!DeviceType) { Renderer.bindFramebuffer(device.handle); }
+	else { Renderer.bindFramebuffer(0); }
+
+	GLbitfield clear_flags;
+	clear_flags |= GL_COLOR_BUFFER_BIT;
+	if (params.depth) clear_flags |= GL_DEPTH_BUFFER_BIT;
+	if (params.stencil) clear_flags |= GL_STENCIL_BUFFER_BIT;
+
+	glClearColor(params.colour[0], params.colour[1], params.colour[2], params.colour[3]);
+	glClear(clear_flags);
+
+} // clear
+
+nothrow @nogc
 void clearColour(DeviceType)(ref DeviceType device, GLint rgb)
 	if (isDevice!DeviceType) {
 
@@ -2099,7 +2125,7 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 			alias texture_units = getUDAs!(__traits(getMember, uniforms[0], m), TextureUnit_);
 			static assert(texture_units.length == 1, "expected exactly one @TextureUnit UDA on Texture type!");
 
-			Renderer.bindTexture(__traits(getMember, uniforms[0], m).handle, __traits(getMember, uniforms[0], m).Type, texture_units[0].unit);
+			Renderer.bindTexture(__traits(getMember, uniforms[0], m).handle, __traits(getMember, uniforms[0], m).texture_type_, texture_units[0].unit);
 
 		}
 
