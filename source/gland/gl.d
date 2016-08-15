@@ -329,7 +329,7 @@ GLuint createShaderProgram(in GLuint[] shader_ids, in AttribTuple[] attribs) {
 
 	return program;
 
-} //createShaderProgram
+} // createShaderProgram
 
 alias AttribTuple = Tuple!(string, "identifier", int, "offset");
 struct Shader(immutable ShaderType[] shader_types, immutable AttribTuple[] attributes, UniformStructType...) {
