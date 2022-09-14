@@ -267,14 +267,14 @@ struct ImguiContext {
 		float[4][4][1] proj_data = [transpose(proj)];
 
 		DrawParams draw_params = {
-			blend_src : BlendFunc.SrcAlpha,
-			blend_dst : BlendFunc.OneMinusSrcAlpha,
-			blend_eq : BlendEquation.Add,
+			blendSrc : BlendFunc.SrcAlpha,
+			blendDst : BlendFunc.OneMinusSrcAlpha,
+			blendEq : BlendEquation.Add,
 			state: {
-				cull_face : false,
-				depth_test : false,
-				scissor_test : true,
-				blend_test : true
+				cullFace : false,
+				depthTest : false,
+				scissorTest : true,
+				blendTest : true
 			}
 		};
 
@@ -307,7 +307,7 @@ struct ImguiContext {
 				} else {
 					
 					// these are some arbitrary as fuck numbers by the way TODO: fix cliprects
-					draw_params.state.scissor_box = tuple(
+					draw_params.state.scissorBox = tuple(
 						cast(int)(pcmd.ClipRect.x)-15,
 						cast(int)(height - pcmd.ClipRect.w)-15,
 						cast(int)(pcmd.ClipRect.z - pcmd.ClipRect.x)+50,

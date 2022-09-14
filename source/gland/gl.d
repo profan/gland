@@ -237,8 +237,8 @@ struct DrawParams {
 	RendererState state;
 
 	// GL_BLEND_TEST
-	BlendFunc blend_src, blend_dst;
-	BlendEquation blend_eq;
+	BlendFunc blendSrc, blendDst;
+	BlendEquation blendEq;
 
 } // DrawParams
 
@@ -1564,49 +1564,49 @@ alias ScissorBox = Tuple!(int, "x", int, "y", uint, "w", uint, "h");
 mixin template RendererStateVars() {
 
 	//GL_SCISSOR_TEST
-	bool scissor_test;
+	bool scissorTest;
 
 	//GL_SCISSOR_BOX
-	ScissorBox scissor_box;
+	ScissorBox scissorBox;
 
 	//GL_STENCIL_TEST
-	bool stencil_test;
+	bool stencilTest;
 
 	//GL_STENCIL_FUNC
-	GLenum stencil_test_func;
+	GLenum stencilTestFunc;
 
 	//GL_DEPTH_TEST
-	bool depth_test;
+	bool depthTest;
 
 	//GL_DEPTH_FUNC
-	GLenum depth_test_func;
+	GLenum depthTestFunc;
 
 	//GL_BLEND
-	bool blend_test;
+	bool blendTest;
 
 	//GL_BLEND_EQUATION
-	BlendEquation blend_eq;
+	BlendEquation blendEq;
 
 	//GL_BLEND_SRC
-	BlendFunc blend_src;
+	BlendFunc blendSrc;
 
 	//GL_BLEND_DST
-	BlendFunc blend_dst;
+	BlendFunc blendDst;
 
 	//GL_CULL_FACE
-	bool cull_face;
+	bool cullFace;
 
 	//GL_DITHER
 	bool dither;
 
 	//GL_LINE_SMOOTH
-	bool line_smooth;
+	bool lineSmooth;
 
 	//GL_MULTISAMPLE
 	bool multisample;
 
 	//GL_SHADE_MODEL
-	ShadingType shading_type;
+	ShadingType shadingType;
 
 }
 
@@ -1757,20 +1757,20 @@ private:
 		state_switch : switch (state_var) {
 
 			alias StateSeq = AliasSeq!(
-				GL_BLEND, blend_test,
-				GL_CULL_FACE, cull_face,
-				GL_DEPTH_TEST, depth_test,
-				GL_STENCIL_TEST, stencil_test,
-				GL_SCISSOR_TEST, scissor_test,
+				GL_BLEND, blendTest,
+				GL_CULL_FACE, cullFace,
+				GL_DEPTH_TEST, depthTest,
+				GL_STENCIL_TEST, stencilTest,
+				GL_SCISSOR_TEST, scissorTest,
 				GL_MULTISAMPLE, multisample
 			);
 
 			/**
 			 * Below foreach expands to a bunch of case statements checking each state variable like such:
 			 *  case GL_BLEND: {
-			 *	  if (blend_test != desired_state) {
+			 *	  if (blendTest != desired_state) {
 			 *      desired_state ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-			 *      blend_test = desired_state;
+			 *      blendTest = desired_state;
 			 *	  }
 			 *    break;
 			*/
@@ -2135,32 +2135,32 @@ void drawWithOffset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType
 	 * TODO: make this less ugly
 	*/
 
-	Renderer.setState(GL_BLEND, params.state.blend_test);
-	Renderer.setState(GL_CULL_FACE, params.state.cull_face);
-	Renderer.setState(GL_DEPTH_TEST, params.state.depth_test);
-	Renderer.setState(GL_STENCIL_TEST, params.state.stencil_test);
-	Renderer.setState(GL_SCISSOR_TEST, params.state.scissor_test);
+	Renderer.setState(GL_BLEND, params.state.blendTest);
+	Renderer.setState(GL_CULL_FACE, params.state.cullFace);
+	Renderer.setState(GL_DEPTH_TEST, params.state.depthTest);
+	Renderer.setState(GL_STENCIL_TEST, params.state.stencilTest);
+	Renderer.setState(GL_SCISSOR_TEST, params.state.scissorTest);
 	Renderer.setState(GL_MULTISAMPLE, params.state.multisample);
 
 	// actions after aforemented glDisable/glEnable
-	if (Renderer.scissor_test) {
-		glScissor(Renderer.scissor_box.expand);
-		Renderer.scissor_box = params.state.scissor_box;
+	if (Renderer.scissorTest) {
+		glScissor(Renderer.scissorBox.expand);
+		Renderer.scissorBox = params.state.scissorBox;
 	}
 
-	if (Renderer.shading_type != params.state.shading_type) {
-		glShadeModel(Renderer.shading_type);
-		Renderer.shading_type = params.state.shading_type;
+	if (Renderer.shadingType != params.state.shadingType) {
+		glShadeModel(Renderer.shadingType);
+		Renderer.shadingType = params.state.shadingType;
 	}
 
-	if (Renderer.blend_test && (Renderer.blend_eq != params.blend_eq || Renderer.blend_src != params.blend_src || Renderer.blend_dst != params.blend_dst)) {
+	if (Renderer.blendTest && (Renderer.blendEq != params.blendEq || Renderer.blendSrc != params.blendSrc || Renderer.blendDst != params.blendDst)) {
 
-		glBlendEquation(params.blend_eq);
-		glBlendFunc(params.blend_src, params.blend_dst);
+		glBlendEquation(params.blendEq);
+		glBlendFunc(params.blendSrc, params.blendDst);
 
-		Renderer.blend_src = params.blend_src;
-		Renderer.blend_dst = params.blend_dst;
-		Renderer.blend_eq = params.blend_eq;
+		Renderer.blendSrc = params.blendSrc;
+		Renderer.blendDst = params.blendDst;
+		Renderer.blendEq = params.blendEq;
 
 	}
 

@@ -286,12 +286,12 @@ struct FontAtlas {
 		}
 
 		DrawParams params = {
-			blend_src : BlendFunc.SrcAlpha,
-			blend_dst : BlendFunc.OneMinusSrcAlpha,
+			blendSrc : BlendFunc.SrcAlpha,
+			blendDst : BlendFunc.OneMinusSrcAlpha,
 			state: {
-				blend_test : true,
-				cull_face : false,
-				depth_test : false
+				blendTest : true,
+				cullFace : false,
+				depthTest : false
 			}
 		};
 
