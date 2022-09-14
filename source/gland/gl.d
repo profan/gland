@@ -85,7 +85,7 @@ struct VertexAttribDivisor_ {
 	GLuint divisor;
 } // VertexAttribDivisor
 
-@property VertexAttribDivisor(GLuint divisor) {
+@property VertexAttribDivisor(GLuint divisor) { // @suppress(dscanner.style.phobos_naming_convention)
 	return VertexAttribDivisor_(divisor);
 } // VertexAttribDivisor
 
@@ -96,7 +96,7 @@ struct Normalized_ {
 
 } // Normalized
 
-@property Normalized() {
+@property Normalized() { // @suppress(dscanner.style.phobos_naming_convention)
 	return Normalized_();
 } // normalized
 
@@ -635,7 +635,7 @@ struct TextureUnit_ {
 	uint unit;
 } // TextureUnit_
 
-@property TextureUnit(uint unit) {
+@property TextureUnit(uint unit) { // @suppress(dscanner.style.phobos_naming_convention)
 	return TextureUnit_(unit);
 } // TextureUnit
 
@@ -1171,7 +1171,7 @@ struct VertexCountProvider_ {
 } // VertexCountProvider
 
 @property
-auto VertexCountProvider() {
+auto VertexCountProvider() { // @suppress(dscanner.style.phobos_naming_convention)
 	return VertexCountProvider_();
 } // VertexCountProvider
 
@@ -1179,7 +1179,7 @@ struct InstanceCountProvider_ {
 } // InstanceCountProvider_
 
 @property
-auto InstanceCountProvider() {
+auto InstanceCountProvider() { // @suppress(dscanner.style.phobos_naming_convention)
 	return InstanceCountProvider_();
 } // InstanceCountProvider
 
@@ -1187,7 +1187,7 @@ struct OffsetProvider_ {
 } // OffsetProvider
 
 @property
-auto OffsetProvider() {
+auto OffsetProvider() { // @suppress(dscanner.style.phobos_naming_convention)
 	return OffsetProvider_();
 } // OffsetProvider
 
@@ -1195,7 +1195,7 @@ struct TypeProvider_ {
 } // TypeProvider_
 
 @property
-auto ManualCountProvider() {
+auto ManualCountProvider() { // @suppress(dscanner.style.phobos_naming_convention)
 	return ManualCountProvider_();
 } // ManualCountProvider
 
@@ -1203,7 +1203,7 @@ struct ManualCountProvider_ {
 } // ManualCountProvider_
 
 @property
-auto TypeProvider() {
+auto TypeProvider() { // @suppress(dscanner.style.phobos_naming_convention)
 	return TypeProvider_();
 } // TypeProvider
 
@@ -1212,7 +1212,7 @@ struct BufferSizeFrom_(alias M) {
 } // BufferSizeFrom_
 
 @property
-auto BufferSizeFrom(alias M)() {
+auto BufferSizeFrom(alias M)() { // @suppress(dscanner.style.phobos_naming_convention)
 	return BufferSizeFrom_!M();
 } // BufferSizeFrom
 
@@ -1284,7 +1284,7 @@ struct VertexArrayT(VDataType) {
 
 	alias UdaTuple = Tuple!(DrawHint, "draw_hint", BufferTarget, "buffer_target", bool, "normalized", string, "size_from");
 
-	static UdaTuple CollectUDAs(alias m)() {
+	static UdaTuple CollectUDAs(alias m)() { // @suppress(dscanner.style.phobos_naming_convention)
 
 		UdaTuple uda_tuple;
 
