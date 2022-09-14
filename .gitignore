@@ -7,3 +7,6 @@ __dummy.html
 ./gland
 source/glad/
 ./gland
+*.lib
+*.pdb
+*.exe
