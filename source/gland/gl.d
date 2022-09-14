@@ -25,14 +25,14 @@ alias GLColour = float[4];
 nothrow pure @nogc
 GLfloat[4] to(T : GLfloat[4])(int colour, ubyte alpha = 255) {
 
-	GLfloat[4] gl_colour = [ //mask out r, g, b components from int
+	GLfloat[4] glColour = [ //mask out r, g, b components from int
 		cast(float)cast(ubyte)(colour>>16)/255,
 		cast(float)cast(ubyte)(colour>>8)/255,
 		cast(float)cast(ubyte)(colour)/255,
 		cast(float)cast(ubyte)(alpha)/255
 	];
 
-	return gl_colour;
+	return glColour;
 
 } //to!GLfloat[4]
 
