@@ -1977,17 +1977,17 @@ void clearColour(DeviceType)(ref DeviceType device, GLint rgb)
 } // clearColour
 
 nothrow @nogc
-void drawOffset(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertex_count, ushort* offset, ref UniformTypes uniform)
+void drawOffset(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertexCount, ushort* offset, ref UniformTypes uniform)
 	    if (isDevice!DeviceType) {
 
 		Renderer.setViewport(device.width, device.height);
 
 		static if (isFramebuffer!DeviceType) {
 			Renderer.bindFramebuffer(device.handle);
-			drawWithOffset(shader, vao, params, vertex_count, offset, uniform);
+			drawWithOffset(shader, vao, params, vertexCount, offset, uniform);
 		} else {
 			Renderer.bindFramebuffer(0);
-			drawWithOffset(shader, vao, params, vertex_count, offset, uniform);
+			drawWithOffset(shader, vao, params, vertexCount, offset, uniform);
 		}
 
 } // drawOffset
@@ -2018,7 +2018,7 @@ void draw(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType shader, r
 alias Alias(alias Symbol) = Symbol;
 
 nothrow @nogc
-void drawWithOffset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertex_count, ushort* offset, ref UniformTypes uniforms) {
+void drawWithOffset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertexCount, ushort* offset, ref UniformTypes uniforms) {
 
 	Renderer.bindVertexArray(vao);
 	Renderer.useProgram(shader.handle);
@@ -2167,13 +2167,13 @@ void drawWithOffset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType
 	// drawing commands here
 
 	static if (VertexArrayType.DrawFunction == DrawType.DrawArrays) {
-		glDrawArrays(vao.type_, cast(int)offset, vertex_count);
+		glDrawArrays(vao.type_, cast(int)offset, vertexCount);
 
 	} else static if (VertexArrayType.DrawFunction == DrawType.DrawArraysInstanced) {
-		glDrawArraysInstanced(vao.type_, cast(int)offset, vertex_count, vao.num_instances_);
+		glDrawArraysInstanced(vao.type_, cast(int)offset, vertexCount, vao.num_instances_);
 
 	} else static if (VertexArrayType.DrawFunction == DrawType.DrawElements) {
-		glDrawElements(vao.type_, vertex_count, vao.draw_type_, offset);
+		glDrawElements(vao.type_, vertexCount, vao.draw_type_, offset);
 
 	} else static if (VertexArrayType.DrawFunction == DrawType.DrawElementsInstanced) {
 		glDrawElementsInstanced(vao.type_, vao.num_vertices_, vao.draw_type_, 0);
