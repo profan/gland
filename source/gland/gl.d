@@ -1977,26 +1977,26 @@ void clearColour(DeviceType)(ref DeviceType device, GLint rgb)
 } // clearColour
 
 nothrow @nogc
-void draw_offset(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertex_count, ushort* offset, ref UniformTypes uniform)
+void drawOffset(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertex_count, ushort* offset, ref UniformTypes uniform)
 	    if (isDevice!DeviceType) {
 
 		Renderer.setViewport(device.width, device.height);
 
 		static if (isFramebuffer!DeviceType) {
 			Renderer.bindFramebuffer(device.handle);
-			draw_with_offset(shader, vao, params, vertex_count, offset, uniform);
+			drawWithOffset(shader, vao, params, vertex_count, offset, uniform);
 		} else {
 			Renderer.bindFramebuffer(0);
-			draw_with_offset(shader, vao, params, vertex_count, offset, uniform);
+			drawWithOffset(shader, vao, params, vertex_count, offset, uniform);
 		}
 
-} // draw_offset
+} // drawOffset
 
 nothrow @nogc
 void draw(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceType device, ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, ref UniformTypes uniform)
 	if (isDevice!DeviceType) {
 	
-	static assert(!VertexArrayType.isManuallyDrawn, "can't infer drawing with a @ManualCountProvider annotated vao, please use draw_offset!");
+	static assert(!VertexArrayType.isManuallyDrawn, "can't infer drawing with a @ManualCountProvider annotated vao, please use drawOffset!");
 
 	Renderer.setViewport(device.width, device.height);
 
@@ -2012,13 +2012,13 @@ void draw(DeviceType, ShaderType, VertexArrayType, UniformTypes...)(ref DeviceTy
 
 nothrow @nogc
 void draw(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, ref UniformTypes uniform) {
-	draw_with_offset(shader, vao, params, cast(uint)vao.num_vertices_, cast(ushort*)0, uniform);
+	drawWithOffset(shader, vao, params, cast(uint)vao.num_vertices_, cast(ushort*)0, uniform);
 } // draw
 
 alias Alias(alias Symbol) = Symbol;
 
 nothrow @nogc
-void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertex_count, ushort* offset, ref UniformTypes uniforms) {
+void drawWithOffset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderType shader, ref VertexArrayType vao, ref DrawParams params, uint vertex_count, ushort* offset, ref UniformTypes uniforms) {
 
 	Renderer.bindVertexArray(vao);
 	Renderer.useProgram(shader.handle);
@@ -2179,4 +2179,4 @@ void draw_with_offset(ShaderType, VertexArrayType, UniformTypes...)(ref ShaderTy
 		glDrawElementsInstanced(vao.type_, vao.num_vertices_, vao.draw_type_, 0);
 	}
 
-} // draw_with_offset
+} // drawWithOffset
