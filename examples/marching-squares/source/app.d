@@ -637,12 +637,12 @@ alias TextureVao = VertexArrayT!VertexData;
 Texture2D generateMapTexture(ref in Height[GridSize][GridSize] cells) {
 
 	TextureParams params = {
-		internal_format : InternalTextureFormat.R8,
-		pixel_format : PixelFormat.Red,
-		pack_alignment : PixelPack.One,
-		unpack_alignment : PixelPack.One,
+		internalFormat : InternalTextureFormat.R8,
+		pixelFormat : PixelFormat.Red,
+		packAlignment : PixelPack.One,
+		unpackAlignment : PixelPack.One,
 		wrapping : TextureWrapping.Repeat,
-		mipmap_max_level : 0
+		mipmapMaxLevel : 0
 	};
 
 	Texture2D new_texture;
@@ -678,8 +678,8 @@ void main() {
 	// framebuffer texture
 	Texture2D fb_texture;
 	TextureParams params = {
-		internal_format : InternalTextureFormat.RGB,
-		pixel_format : PixelFormat.RGB
+		internalFormat : InternalTextureFormat.RGB,
+		pixelFormat : PixelFormat.RGB
 	};
 	auto fb_tex_result = Texture2D.create(fb_texture, cast(ubyte*)null, window.width, window.height, params);
 

@@ -129,8 +129,8 @@ void main() {
 	immutable uint sections = 8;
 	auto texture_data = checkerboard!sections(255, 0);
 	TextureParams texture_params = {
-		internal_format : InternalTextureFormat.R8,
-		pixel_format : PixelFormat.Red
+		internalFormat : InternalTextureFormat.R8,
+		pixelFormat : PixelFormat.Red
 	};
 	auto texture_result = Texture2D.create(texture, texture_data.ptr, sections, sections, texture_params);
 

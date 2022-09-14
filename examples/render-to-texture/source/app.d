@@ -152,8 +152,8 @@ void main() {
 	// create texture to render to
 	Texture2D framebuffer_texture;
 	TextureParams tex_params = {
-		internal_format : InternalTextureFormat.RGB,
-		pixel_format : PixelFormat.RGB
+		internalFormat : InternalTextureFormat.RGB,
+		pixelFormat : PixelFormat.RGB
 	};
 	auto texture_result = Texture2D.create(framebuffer_texture, null, texture_w, texture_h, tex_params);
 	

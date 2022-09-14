@@ -185,9 +185,9 @@ struct FontAtlas {
 		}
 
 		TextureParams params = {
-			internal_format : InternalTextureFormat.R8,
-			pixel_format : PixelFormat.Red,
-			unpack_alignment : PixelPack.One,
+			internalFormat : InternalTextureFormat.R8,
+			pixelFormat : PixelFormat.Red,
+			unpackAlignment : PixelPack.One,
 			filtering : TextureFiltering.Linear,
 			wrapping : TextureWrapping.ClampToEdge
 		};

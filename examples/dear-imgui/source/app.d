@@ -247,8 +247,8 @@ struct ImguiContext {
 		ImFontAtlas_GetTexDataAsRGBA32(io.Fonts, &pixels, &width, &height, &bytes_per_pixel);
 
 		TextureParams tex_params = {
-			internal_format : InternalTextureFormat.RGBA,
-			pixel_format : PixelFormat.RGBA,
+			internalFormat : InternalTextureFormat.RGBA,
+			pixelFormat : PixelFormat.RGBA,
 			wrapping : TextureWrapping.ClampToEdge,
 			filtering : TextureFiltering.Linear
 		};

@@ -612,22 +612,22 @@ enum PixelPack {
 
 struct TextureParams {
 
-	InternalTextureFormat internal_format;
-	PixelFormat pixel_format;
+	InternalTextureFormat internalFormat;
+	PixelFormat pixelFormat;
 
 	/* optional parameters, defaults specified */
 	TextureFiltering filtering = TextureFiltering.Nearest;
 	TextureWrapping wrapping = TextureWrapping.ClampToEdge;
 
 	/* word alignment by default */
-	PixelPack pack_alignment = PixelPack.Four;
-	PixelPack unpack_alignment = PixelPack.Four;
+	PixelPack packAlignment = PixelPack.Four;
+	PixelPack unpackAlignment = PixelPack.Four;
 
 	/* level of detail */
-	int min_lod, max_lod;
+	int minLod, maxLod;
 
 	/* mipmapping level */
-	int mipmap_base_level, mipmap_max_level;
+	int mipmapBaseLevel, mipmapMaxLevel;
 
 } // TextureParams
 
@@ -645,8 +645,8 @@ struct Texture {
 
 		GLuint handle_;
 		TextureType texture_type_;
-		InternalTextureFormat internal_format_;
-		PixelFormat pixel_format_;
+		InternalTextureFormat internalFormat_;
+		PixelFormat pixelFormat_;
 
 	}
 
@@ -669,8 +669,8 @@ struct Texture {
 		enum TType = T.Type;
 
 		texture.texture_type_ = TType;
-		texture.internal_format_ = params.internal_format;
-		texture.pixel_format_ = params.pixel_format;
+		texture.internalFormat_ = params.internalFormat;
+		texture.pixelFormat_ = params.pixelFormat;
 
 		// begin creation
 		glGenTextures(1, &texture.handle_);
@@ -685,16 +685,16 @@ struct Texture {
 		glTexParameterf(texture.texture_type_, GL_TEXTURE_MAG_FILTER, params.filtering);
 
 		// mipmapping levels
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_BASE_LEVEL, params.mipmap_base_level);
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_MAX_LEVEL, params.mipmap_max_level);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_BASE_LEVEL, params.mipmapBaseLevel);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_MAX_LEVEL, params.mipmapMaxLevel);
 
 		// level of detail
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_MIN_LOD, params.min_lod);
-		glTexParameteri(texture.texture_type_, GL_TEXTURE_MAX_LOD, params.max_lod);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_MIN_LOD, params.minLod);
+		glTexParameteri(texture.texture_type_, GL_TEXTURE_MAX_LOD, params.maxLod);
 
 		// pixel pack and unpack alignment
-		glPixelStorei(GL_PACK_ALIGNMENT, params.pack_alignment);
-		glPixelStorei(GL_UNPACK_ALIGNMENT, params.unpack_alignment);
+		glPixelStorei(GL_PACK_ALIGNMENT, params.packAlignment);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, params.unpackAlignment);
 
 		auto data_type = TypeToGL!DataType;
 
@@ -703,10 +703,10 @@ struct Texture {
 			glTexImage1D(
 				texture.texture_type_,
 				0, // level
-				texture.internal_format_,
+				texture.internalFormat_,
 				texture.width_,
 				0, // border
-				texture.pixel_format_,
+				texture.pixelFormat_,
 				data_type,
 				cast(void*)texture_data
 			);
@@ -716,10 +716,10 @@ struct Texture {
 			glTexImage2D(
 				texture.texture_type_,
 				0, // level
-				texture.internal_format_,
+				texture.internalFormat_,
 				texture.width_, texture.height_,
 				0, // border
-				texture.pixel_format_,
+				texture.pixelFormat_,
 				data_type,
 				cast(void*)texture_data
 			);
@@ -729,10 +729,10 @@ struct Texture {
 			glTexImage3D(
 				texture.texture_type_,
 				0, // level
-				texture.internal_format_,
+				texture.internalFormat_,
 				texture.width_, texture.height_, texture.depth_,
 				0, // border
-				texture.pixel_format_,
+				texture.pixelFormat_,
 				data_type,
 				cast(void*)texture_data
 			);
@@ -846,14 +846,14 @@ struct Texture2D {
 	void update(int x_offset, int y_offset, int width, int height, in ubyte* bytes) {
 
 		Renderer.bindTexture(texture_.handle_, Type, 0);
-		glTexSubImage2D(texture_.texture_type_, 0, x_offset, y_offset, width, height, texture_.pixel_format_, TypeToGL!ubyte, bytes);
+		glTexSubImage2D(texture_.texture_type_, 0, x_offset, y_offset, width, height, texture_.pixelFormat_, TypeToGL!ubyte, bytes);
 
 	} // update
 
 	nothrow @nogc
-	SimpleFramebuffer.Error asSurface(ref SimpleFramebuffer buffer, bool with_depth_buffer) {
+	SimpleFramebuffer.Error asSurface(ref SimpleFramebuffer buffer, bool withDepthBuffer) {
 
-		return SimpleFramebuffer.create(buffer, this, with_depth_buffer);
+		return SimpleFramebuffer.create(buffer, this, withDepthBuffer);
 
 	} // asSurface
 
@@ -900,7 +900,7 @@ struct Texture3D {
 	void update(int x_offset, int y_offset, int z_offset, int width, int height, int depth, in ubyte* bytes) {
 
 		Renderer.bindTexture(texture_.handle_, Type, 0);
-		glTexSubImage3D(texture_.texture_type_, 0, x_offset, y_offset, z_offset, width, height, depth, texture_.pixel_format_, TypeToGL!ubyte, bytes);
+		glTexSubImage3D(texture_.texture_type_, 0, x_offset, y_offset, z_offset, width, height, depth, texture_.pixelFormat_, TypeToGL!ubyte, bytes);
 
 	} // update
 
@@ -937,7 +937,7 @@ struct Texture1DArray {
 	void update(int x_offset, int y_offset, int z_offset, int width, int height, int depth, in ubyte* bytes) {
 
 		Renderer.bindTexture(texture_.handle_, Type, 0);
-		glTexSubImage2D(texture_.texture_type_, 0, x_offset, y_offset, width, height, texture_.pixel_format_, TypeToGL!ubyte, bytes);
+		glTexSubImage2D(texture_.texture_type_, 0, x_offset, y_offset, width, height, texture_.pixelFormat_, TypeToGL!ubyte, bytes);
 
 	} // update
 
@@ -976,7 +976,7 @@ struct Texture2DArray {
 	void update(int x_offset, int y_offset, int z_offset, int width, int height, int depth, in ubyte* bytes) {
 
 		Renderer.bindTexture(texture_.handle_, Type, 0);
-		glTexSubImage3D(texture_.texture_type_, 0, x_offset, y_offset, z_offset, width, height, depth, texture_.pixel_format_, TypeToGL!ubyte, bytes);
+		glTexSubImage3D(texture_.texture_type_, 0, x_offset, y_offset, z_offset, width, height, depth, texture_.pixelFormat_, TypeToGL!ubyte, bytes);
 
 	} // update
 
@@ -1024,7 +1024,7 @@ struct SimpleFramebuffer {
 	} // Error
 
 	nothrow @nogc
-	static Error create(ref SimpleFramebuffer buffer, ref Texture2D texture, bool with_depth_buffer) {
+	static Error create(ref SimpleFramebuffer buffer, ref Texture2D texture, bool withDepthBuffer) {
 
 		// from texture
 		buffer.width_ = texture.width;
@@ -1035,7 +1035,7 @@ struct SimpleFramebuffer {
 		glGenFramebuffers(1, &buffer.fbo_);
 		glBindFramebuffer(GL_FRAMEBUFFER, buffer.fbo_);
 
-		if (with_depth_buffer) {
+		if (withDepthBuffer) {
 			glGenRenderbuffers(1, &buffer.depth_);
 			glBindRenderbuffer(GL_RENDERBUFFER, buffer.depth_);
 			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, texture.width, texture.height);
@@ -1117,7 +1117,7 @@ struct Framebuffer(WithDepthBuffer wdb = WithDepthBuffer.No) {
 		glGenFramebuffers(1, &buffer.fbo_);
 		glBindFramebuffer(GL_FRAMEBUFFER, buffer.fbo_);
 
-		static if (with_depth_buffer) {
+		static if (withDepthBuffer) {
 			glGenRenderbuffers(1, &buffer.depth_);
 			glBindRenderbuffer(GL_RENDERBUFFER, buffer.depth_);
 			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, buffer.texture_.width, buffer.texture_.height);
@@ -1135,7 +1135,7 @@ struct Framebuffer(WithDepthBuffer wdb = WithDepthBuffer.No) {
 
 	~this() {
 
-		static if (with_depth_buffer) {
+		static if (withDepthBuffer) {
 			glDeleteRenderbuffers(1, &depth_);
 		}
 
@@ -1147,7 +1147,7 @@ struct Framebuffer(WithDepthBuffer wdb = WithDepthBuffer.No) {
 
 		texture_.resize(w, h);
 
-		static if (with_depth_buffer) {
+		static if (withDepthBuffer) {
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
 			glBindRenderbuffer(GL_RENDERBUFFER, depth_);
 			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width_, height_);
@@ -1626,18 +1626,18 @@ struct Device {
 @nogc nothrow:
 
 	// get device height/width
-	DimFunction width_fn_;
-	DimFunction height_fn_;
+	DimFunction widthFn_;
+	DimFunction heightFn_;
 
 	// swap buffers on device
-	SwapFunction swap_fn_;
+	SwapFunction swapFn_;
 
 	@nogc
 	nothrow
 	@property {
-		int width() { return width_fn_(); }
-		int height() { return height_fn_(); }
-		void present() { swap_fn_(); }
+		int width() { return widthFn_(); }
+		int height() { return heightFn_(); }
+		void present() { swapFn_(); }
 	}
 
 } // Device
@@ -1678,37 +1678,37 @@ static:
 	*/
 
 	// cached here
-	int current_viewport_width_;
-	int current_viewport_height_;
+	int currentViewportWidth_;
+	int currentViewportHeight_;
 
 	/**
 	 * data bindings
 	*/
 
 	//GL_ARRAY_BUFFER_BINDING
-	GLuint array_buffer_binding;
+	GLuint arrayBufferBinding;
 
 	//GL_ELEMENT_ARRAY_BUFFER_BINDING
-	GLuint element_array_buffer_binding;
+	GLuint elementArrayBufferBinding;
 
 	//GL_VERTEX_ARRAY_BUFFER_BINDING
-	GLuint vertex_array_buffer_binding;
+	GLuint vertexArrayBufferBinding;
 
 	//GL_UNIFORM_BUFFER
-	GLuint uniform_buffer_binding;
+	GLuint uniformBufferBinding;
 
 	//GL_TEXTURE_BUFFER
-	GLuint texture_buffer_binding;
+	GLuint textureBufferBinding;
 
 	// TODO: look at this later, at least 16 is the bottom, but it *can* be more
 	//GL_TEXTURE_BINDING_2D
-	GLuint[16] texture_binding_2d;
+	GLuint[16] textureBinding2d;
 
 	//GL_CURRENT_PROGRAM
-	GLint current_program_binding;
+	GLint currentProgramBinding;
 
 	//GL_FRAMEBUFFER_BINDING
-	GLuint framebuffer_binding;
+	GLuint framebufferBinding;
 
 	/**
 	 * misc state
@@ -1741,10 +1741,10 @@ private:
 	@nogc nothrow
 	void setViewport(int w, int h) {
 
-		if (current_viewport_width_ != w || current_viewport_height_ != h) {
-			current_viewport_width_ = w;
-			current_viewport_height_ = h;
-			glViewport(0, 0, current_viewport_width_, current_viewport_height_);
+		if (currentViewportWidth_ != w || currentViewportHeight_ != h) {
+			currentViewportWidth_ = w;
+			currentViewportHeight_ = h;
+			glViewport(0, 0, currentViewportWidth_, currentViewportHeight_);
 		}
 
 	} // setViewport
@@ -1815,15 +1815,15 @@ private:
 				 CopyWriteBuffer,
 				 PixelPackBuffer,
 				 PixelUnpackBuffer:
-				result = isBound!array_buffer_binding();
+				result = isBound!arrayBufferBinding();
 				break;
 
 			case ElementArrayBuffer:
-				result = isBound!element_array_buffer_binding();
+				result = isBound!elementArrayBufferBinding();
 				break;
 
 			case TextureBuffer:
-				result = isBound!texture_buffer_binding();
+				result = isBound!textureBufferBinding();
 				break;
 
 			case TransformFeedbackBuffer:
@@ -1845,10 +1845,10 @@ private:
 	nothrow @nogc
 	void bindTexture(GLuint texture_handle, TextureType type, uint unit) {
 
-		if (texture_binding_2d[unit] != texture_handle) {
+		if (textureBinding2d[unit] != texture_handle) {
 			glActiveTexture(GL_TEXTURE0 + unit);
 			glBindTexture(type, texture_handle);
-			texture_binding_2d[unit] = texture_handle;
+			textureBinding2d[unit] = texture_handle;
 		}
 
 	} // bindTexture
@@ -1856,11 +1856,11 @@ private:
 	nothrow @nogc
 	bool bindVertexArray(VertexArrayType)(ref VertexArrayType vao) {
 
-		if (vertex_array_buffer_binding == *vao.handle) {
+		if (vertexArrayBufferBinding == *vao.handle) {
 			return false;
 		}
 
-		vertex_array_buffer_binding = *vao.handle;
+		vertexArrayBufferBinding = *vao.handle;
 		glBindVertexArray(*vao.handle);
 
 		return true;
@@ -1874,22 +1874,22 @@ private:
 
 			case ArrayBuffer: {
 
-				if (array_buffer_binding == id) {
+				if (arrayBufferBinding == id) {
 					return false;
 				}
 
-				array_buffer_binding = id;
+				arrayBufferBinding = id;
 				break;
 
 			}
 
 			case ElementArrayBuffer: {
 
-				if (element_array_buffer_binding == id) {
+				if (elementArrayBufferBinding == id) {
 					return false;
 				}
 
-				element_array_buffer_binding = id;
+				elementArrayBufferBinding = id;
 				break;
 
 			}
@@ -1910,12 +1910,12 @@ private:
 	nothrow @nogc
 	bool bindFramebuffer(GLuint id) {
 
-		if (framebuffer_binding == id) {
+		if (framebufferBinding == id) {
 			return false;
 		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, id);
-		framebuffer_binding = id;
+		framebufferBinding = id;
 		return true;
 
 	} // bindFramebuffer
@@ -1923,11 +1923,11 @@ private:
 	nothrow @nogc
 	bool useProgram(GLuint program) {
 
-		if (current_program_binding == program) {
+		if (currentProgramBinding == program) {
 			return false; // already bound
 		}
 
-		current_program_binding = program;
+		currentProgramBinding = program;
 		glUseProgram(program);
 		return true;
 
@@ -1953,13 +1953,13 @@ void clear(DeviceType)(ref DeviceType device, auto ref ClearParams params)
 	static if (isFramebuffer!DeviceType) { Renderer.bindFramebuffer(device.handle); }
 	else { Renderer.bindFramebuffer(0); }
 
-	GLbitfield clear_flags;
-	clear_flags |= GL_COLOR_BUFFER_BIT;
-	if (params.depth) clear_flags |= GL_DEPTH_BUFFER_BIT;
-	if (params.stencil) clear_flags |= GL_STENCIL_BUFFER_BIT;
+	GLbitfield clearFlags;
+	clearFlags |= GL_COLOR_BUFFER_BIT;
+	if (params.depth) clearFlags |= GL_DEPTH_BUFFER_BIT;
+	if (params.stencil) clearFlags |= GL_STENCIL_BUFFER_BIT;
 
 	glClearColor(params.colour[0], params.colour[1], params.colour[2], params.colour[3]);
-	glClear(clear_flags);
+	glClear(clearFlags);
 
 } // clear
 
