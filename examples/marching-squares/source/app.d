@@ -93,19 +93,19 @@ immutable char* ms_gs = q{
 			*/
 			case 3: {
 
-				vec4 offset_1 = vec4(0.0, 0.0, 0.0, 1.0);
+				vec4 offset_1 = vec4(0.0, -0.5, 0.0, 1.0);
 				gl_Position = origin + offset_1;
 				EmitVertex();
 
-				vec4 offset_2 = vec4(0.0, -0.5, 0.0, 1.0);
+				vec4 offset_2 = vec4(1.0, -0.5, 0.0, 1.0);
 				gl_Position = origin + offset_2;
 				EmitVertex();
 
-				vec4 offset_3 = vec4(1.0, 0.0, 0.0, 1.0);
+				vec4 offset_3 = vec4(0.0, -1.0, 0.0, 1.0);
 				gl_Position = origin + offset_3;
 				EmitVertex();
 
-				vec4 offset_4 = vec4(1.0, -0.5, 0.0, 1.0);
+				vec4 offset_4 = vec4(1.0, -1.0, 0.0, 1.0);
 				gl_Position = origin + offset_4;
 				EmitVertex();
 
@@ -271,19 +271,19 @@ immutable char* ms_gs = q{
 			*/
 			case 9: {
 
-				vec4 offset_1 = vec4(0.0, 0.0, 0.0, 1.0);
+				vec4 offset_1 = vec4(0.0, -1.0, 0.0, 1.0);
 				gl_Position = origin + offset_1;
 				EmitVertex();
 
-				vec4 offset_2 = vec4(0.0, -1.0, 0.0, 1.0);
+				vec4 offset_2 = vec4(0.5, -1.0, 0.0, 1.0);
 				gl_Position = origin + offset_2;
 				EmitVertex();
 
-				vec4 offset_3 = vec4(0.5, 1.0, 0.0, 1.0);
+				vec4 offset_3 = vec4(0.0, 0.0, 0.0, 1.0);
 				gl_Position = origin + offset_3;
 				EmitVertex();
 
-				vec4 offset_4 = vec4(0.5, -1.0, 0.0, 1.0);
+				vec4 offset_4 = vec4(0.5, 0.0, 0.0, 1.0);
 				gl_Position = origin + offset_4;
 				EmitVertex();
 
@@ -498,11 +498,6 @@ immutable char* ms_gs = q{
 		ivec2 size = textureSize(texture_map, 0);
 		float colour = texelFetch(texture_map, coord, 0).r * 10;
 
-		int start_x = clamp(int(origin.x) - 1, 0, 8);
-		int start_y = clamp(int(origin.y) - 1, 0, 8);
-		int end_x = clamp(int(origin.x) + 1, 0, 8);
-		int end_y = clamp(int(origin.y) + 1, 0, 8);
-
 		float top_left = texelFetch(texture_map, coord + ivec2(0, 0), 0).r * 255.0f;
 		float top_right = texelFetch(texture_map, coord + ivec2(1, 0), 0).r * 255.0f;
 		float bottom_left = texelFetch(texture_map, coord + ivec2(0, 1), 0).r * 255.0f;
@@ -516,10 +511,13 @@ immutable char* ms_gs = q{
 		int result = tl_bit | tr_bit | br_bit | bl_bit;
 
 		// pass colour over to fragment shader
-		gs_colour = result != 0 ? vec4(0.5, 0.0, 0.0, 1.0) : vec4(0.0, 0.0, 0.0, 0.0);
+		gs_colour = result != 0
+			? vec4(0.5, 0.0, 0.0, 1.0)
+			: vec4(0.0, 0.0, 0.0, 0.0);
 
 		vec4 actual_origin = vec4(origin.xy - vec2(2, 1), origin.zw);
-		outputSequence(actual_origin, result);
+		vec4 adjusted_origin = vec4(actual_origin.xy / 2.0 - vec2(1.0, 0.5), actual_origin.zw);
+		outputSequence(adjusted_origin, result);
 
 	}
 
@@ -560,10 +558,10 @@ immutable Height[GridSize][GridSize] grid = [
 		10, 15, 15, 15, 15, 15, 15, 10
 	],
 	[
-		10, 15, 15, 15, 15, 15, 15, 10
+		10, 10, 15, 15, 15, 15, 10, 10
 	],
 	[
-		10, 10, 15, 15, 15, 15, 10, 10
+		10, 10, 10, 10, 10, 10, 10, 10
 	],
 	[
 		5, 10, 10, 10, 10, 10, 10, 5

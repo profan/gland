@@ -64,7 +64,7 @@ struct ImguiUniform {
 	float[4][4][] ProjMtx;
 
 	@TextureUnit(0)
-	OpaqueTexture* Texture_;
+	OpaqueTexture* Texture_; // @suppress(dscanner.style.phobos_naming_convention)
 
 } // ImguiUniform
 
