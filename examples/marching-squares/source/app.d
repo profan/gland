@@ -23,11 +23,11 @@ immutable char* ms_gs = q{
 	#version 330 core
 
 	layout (points) in;
-	layout (triangle_strip, max_vertices = 25) out;
+	layout (triangle_strip, max_vertices = 6) out;
 
 	uniform sampler2D texture_map;
 
-	out vec3 gs_colour;
+	out vec4 gs_colour;
 
 	void outputSequence(vec4 origin, int which) {
 
@@ -370,11 +370,11 @@ immutable char* ms_gs = q{
 			*/
 			case 12: {
 
-				vec4 offset_1 = vec4(0.0, -1.0, 0.0, 1.0);
+				vec4 offset_1 = vec4(0.0, 0.0, 0.0, 1.0);
 				gl_Position = origin + offset_1;
 				EmitVertex();
 
-				vec4 offset_2 = vec4(1.0, -1.0, 0.0, 1.0);
+				vec4 offset_2 = vec4(1.0, 0.0, 0.0, 1.0);
 				gl_Position = origin + offset_2;
 				EmitVertex();
 
@@ -494,42 +494,32 @@ immutable char* ms_gs = q{
 
 		vec4 origin = gl_in[0].gl_Position;
 		ivec2 coord = ivec2(origin.xy);
+		
+		ivec2 size = textureSize(texture_map, 0);
 		float colour = texelFetch(texture_map, coord, 0).r * 10;
-
-		gs_colour = vec3(colour, 0.0, 0.0);
-
-		vec2[9] positions = vec2[9](
-			vec2(origin.x, origin.y), // point itself
-			vec2(origin.x + 1, origin.y), // right of point
-			vec2(origin.x, origin.y + 1), // below point
-			vec2(origin.x + 1, origin.y + 1), // below to the right
-			vec2(origin.x - 1, origin.y), // to the left of the point
-			vec2(origin.x, origin.y - 1), // above point
-			vec2(origin.x - 1, origin.y - 1), // above and to the left
-			vec2(origin.x + 1, origin.y - 1), // above and to the right
-			vec2(origin.x - 1, origin.y + 1) // below and to the left
-		);
 
 		int start_x = clamp(int(origin.x) - 1, 0, 8);
 		int start_y = clamp(int(origin.y) - 1, 0, 8);
 		int end_x = clamp(int(origin.x) + 1, 0, 8);
 		int end_y = clamp(int(origin.y) + 1, 0, 8);
 
-		/*
-		int result;
-		for (int y = start_y; y < end_y; y++) {
-			for (int x = start_x; x < end_x; x++) {
-				int value = int(texelFetch(texture_map, coord + ivec2(x, y), 0).r);
-				result |= value;
-			}
-		}
-		*/
+		float top_left = texelFetch(texture_map, coord + ivec2(0, 0), 0).r * 255.0f;
+		float top_right = texelFetch(texture_map, coord + ivec2(1, 0), 0).r * 255.0f;
+		float bottom_left = texelFetch(texture_map, coord + ivec2(0, 1), 0).r * 255.0f;
+		float bottom_right = texelFetch(texture_map, coord + ivec2(1, 1), 0).r * 255.0f;
 
-		//int result;
-		//result += int(texelFetch(texture_map, coord, 0).r);
+		int bv = 10;
+		int tl_bit = top_left > bv ? (1 << 0) : 0;
+		int tr_bit = top_right > bv ? (1 << 1) : 0;
+		int br_bit = bottom_right > bv ? (1 << 2) : 0;
+		int bl_bit = bottom_left > bv ? (1 << 3) : 0;
+		int result = tl_bit | tr_bit | br_bit | bl_bit;
 
-		//vec4 actual_origin = vec4(origin.xy - vec2(2, 1), origin.zw);
-		outputSequence(origin, 5);
+		// pass colour over to fragment shader
+		gs_colour = result != 0 ? vec4(0.5, 0.0, 0.0, 1.0) : vec4(0.0, 0.0, 0.0, 0.0);
+
+		vec4 actual_origin = vec4(origin.xy - vec2(2, 1), origin.zw);
+		outputSequence(actual_origin, result);
 
 	}
 
@@ -538,9 +528,9 @@ immutable char* ms_gs = q{
 immutable char* ms_fs = q{
 	#version 330 core
 
-	in vec3 gs_colour;
+	in vec4 gs_colour;
 
-	out vec3 f_colour;
+	out vec4 f_colour;
 
 	void main() {
 		f_colour = gs_colour;
@@ -739,27 +729,27 @@ void main() {
 
 	// load graphics and stuff
 	MapShader mapShader;
-	auto shader_result = MapShader.compile(mapShader, &ms_vs, &ms_gs, &ms_fs);
-	auto map_texture = generateMapTexture(grid); 
+	auto shaderResult = MapShader.compile(mapShader, &ms_vs, &ms_gs, &ms_fs);
+	auto mapTexture = generateMapTexture(grid);
 	
 	// check validity
-	if (shader_result != MapShader.Error.Success) {
+	if (shaderResult != MapShader.Error.Success) {
 		writefln("[MAIN] Shader compile failed, exiting!");
 		return; // exit now
 	}
 
 	// position data
 	uint cur_x, cur_y;
-	Vec2f[GridSize][GridSize] grid_positions;
-	foreach (y, row; grid_positions) {
+	Vec2f[GridSize][GridSize] gridPositions;
+	foreach (y, row; gridPositions) {
 		foreach (x, col; row) {
-			grid_positions[y][x] = [cur_x++, cur_y];
+			gridPositions[y][x] = [cur_x++, cur_y];
 		}
 		cur_y++;
 		cur_x = 0;
 	}
 
-	auto mapData = MapData(cast(Vec2f[])grid_positions);
+	auto mapData = MapData(cast(Vec2f[])gridPositions);
 
 	// now, upload vertices
 	auto vao = MapVao.upload(mapData, DrawPrimitive.Points);
@@ -778,12 +768,24 @@ void main() {
 			window.quit();
 		}
 
+		device.clearColour(0x428bca);
+
 		// default state, holds all OpenGL state params like blend state etc to be use for given draw call
-		DrawParams drawParams = {};
+		DrawParams drawParams = {
+			blendSrc : BlendFunc.SrcAlpha,
+			blendDst : BlendFunc.OneMinusSrcAlpha,
+			blendEq : BlendEquation.Add,
+			state: {
+				cullFace : false,
+				depthTest : false,
+				scissorTest : false,
+				blendTest : true
+			}
+		};
 
 		sfb.clearColour(0xffa500);
 
-		auto mapUniform = MapUniform(&map_texture);
+		auto mapUniform = MapUniform(&mapTexture);
 		sfb.draw(mapShader, vao, drawParams, mapUniform);
 
 		// cornflower blue, of course
