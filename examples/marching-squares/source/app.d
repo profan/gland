@@ -29,7 +29,7 @@ immutable char* ms_gs = q{
 
 	out vec4 gs_colour;
 
-	void outputSequence(vec4 origin, int which) {
+	void march_squares(vec4 origin, int which) {
 
 		switch (which) {
 
@@ -488,7 +488,7 @@ immutable char* ms_gs = q{
 			}
 		}
 
-	} // outputSequence
+	} // march_squares
 
 	void main() {
 
@@ -517,7 +517,7 @@ immutable char* ms_gs = q{
 
 		vec4 actual_origin = vec4(origin.xy - vec2(2, 1), origin.zw);
 		vec4 adjusted_origin = vec4(actual_origin.xy / 2.0 - vec2(1.0, 0.5), actual_origin.zw);
-		outputSequence(adjusted_origin, result);
+		march_squares(adjusted_origin, result);
 
 	}
 
@@ -546,22 +546,22 @@ immutable Height[GridSize][GridSize] grid = [
 		5, 10, 10, 10, 10, 10, 10, 5
 	],
 	[
-		10, 10, 15, 15, 15, 15, 10, 10
-	],
-	[
-		10, 15, 15, 15, 15, 15, 15, 10
-	],
-	[
-		10, 15, 15, 15, 15, 15, 15, 10
-	],
-	[
-		10, 15, 15, 15, 15, 15, 15, 10
+		10, 10, 15, 10, 10, 15, 10, 10
 	],
 	[
 		10, 15, 15, 15, 15, 15, 15, 10
 	],
 	[
 		10, 10, 15, 15, 15, 15, 10, 10
+	],
+	[
+		10, 10, 15, 15, 15, 15, 10, 10
+	],
+	[
+		10, 15, 15, 15, 15, 15, 15, 10
+	],
+	[
+		10, 10, 15, 10, 10, 15, 10, 10
 	],
 	[
 		5, 10, 10, 10, 10, 10, 10, 5
