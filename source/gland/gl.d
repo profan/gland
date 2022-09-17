@@ -92,7 +92,7 @@ struct VertexAttribDivisor_ {
 // attribute normalization in structures
 struct Normalized_ {
 
-	bool is_normalized;
+	bool isNormalized;
 
 } // Normalized
 
