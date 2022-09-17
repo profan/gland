@@ -155,18 +155,18 @@ immutable char* ms_gs = q{
 				gl_Position = origin + offset_1_mid;
 				EmitVertex();
 
-				vec4 offset_2 = vec4(1.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_2;
-				EmitVertex();
-
 				vec4 offset_4 = vec4(0.0, -0.5, 0.0, 1.0);
 				gl_Position = origin + offset_4;
+				EmitVertex();
+
+				vec4 offset_2 = vec4(1.0, -0.5, 0.0, 1.0);
+				gl_Position = origin + offset_2;
 				EmitVertex();
 
 				vec4 offset_3_mid = vec4(0.0, -1.0, 0.0, 1.0);
 				gl_Position = origin + offset_3_mid;
 				EmitVertex();
-				
+
 				vec4 offset_3 = vec4(0.5, -1.0, 0.0, 1.0);
 				gl_Position = origin + offset_3;
 				EmitVertex();
