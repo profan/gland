@@ -147,8 +147,31 @@ immutable char* ms_gs = q{
 			*/
 			case 5: {
 
-				// outputSequence(origin, 1);
-				// outputSequence(origin, 4);
+				vec4 offset_1 = vec4(0.5, 0.0, 0.0, 1.0);
+				gl_Position = origin + offset_1;
+				EmitVertex();
+
+				vec4 offset_1_mid = vec4(1.0, 0.0, 0.0, 1.0);
+				gl_Position = origin + offset_1_mid;
+				EmitVertex();
+
+				vec4 offset_2 = vec4(1.0, -0.5, 0.0, 1.0);
+				gl_Position = origin + offset_2;
+				EmitVertex();
+
+				vec4 offset_4 = vec4(0.0, -0.5, 0.0, 1.0);
+				gl_Position = origin + offset_4;
+				EmitVertex();
+
+				vec4 offset_3_mid = vec4(0.0, -1.0, 0.0, 1.0);
+				gl_Position = origin + offset_3_mid;
+				EmitVertex();
+				
+				vec4 offset_3 = vec4(0.5, -1.0, 0.0, 1.0);
+				gl_Position = origin + offset_3;
+				EmitVertex();
+
+				EndPrimitive();
 
 				break;
 
@@ -184,9 +207,9 @@ immutable char* ms_gs = q{
 			}
 
 			/*
-			   x--x
-			   |  |
 			   o--x
+			   |  |
+			   x--x
 			*/
 			case 7: {
 				
@@ -256,11 +279,11 @@ immutable char* ms_gs = q{
 				gl_Position = origin + offset_2;
 				EmitVertex();
 
-				vec4 offset_3 = vec4(0.5, 0.0, 0.0, 1.0);
+				vec4 offset_3 = vec4(0.5, 1.0, 0.0, 1.0);
 				gl_Position = origin + offset_3;
 				EmitVertex();
 
-				vec4 offset_4 = vec4(0.5, -0.5, 0.0, 1.0);
+				vec4 offset_4 = vec4(0.5, -1.0, 0.0, 1.0);
 				gl_Position = origin + offset_4;
 				EmitVertex();
 
@@ -281,12 +304,20 @@ immutable char* ms_gs = q{
 				gl_Position = origin + offset_1;
 				EmitVertex();
 
+				vec4 offset_1_mid = vec4(0.0, 0.0, 0.0, 1.0);
+				gl_Position = origin + offset_1_mid;
+				EmitVertex();
+
 				vec4 offset_2 = vec4(0.5, -1.0, 0.0, 1.0);
 				gl_Position = origin + offset_2;
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.5, 0.0, 0.0, 1.0);
 				gl_Position = origin + offset_3;
+				EmitVertex();
+
+				vec4 offset_3_mid = vec4(1.0, -1.0, 0.0, 1.0);
+				gl_Position = origin + offset_3_mid;
 				EmitVertex();
 
 				vec4 offset_4 = vec4(1.0, -0.5, 0.0, 1.0);
@@ -405,7 +436,7 @@ immutable char* ms_gs = q{
 				gl_Position = origin + offset_1;
 				EmitVertex();
 
-				vec4 offset_2 = vec4(0.5, 0.0, 0.0, 1.0);
+				vec4 offset_2 = vec4(0.0, 0.0, 0.0, 1.0);
 				gl_Position = origin + offset_2;
 				EmitVertex();
 
@@ -417,7 +448,7 @@ immutable char* ms_gs = q{
 				gl_Position = origin + offset_4;
 				EmitVertex();
 
-				vec4 offset_5 = vec4(0.0, -1.0, 0.0, 1.0);
+				vec4 offset_5 = vec4(0.5, -1.0, 0.0, 1.0);
 				gl_Position = origin + offset_5;
 				EmitVertex();
 
@@ -498,7 +529,7 @@ immutable char* ms_gs = q{
 		//result += int(texelFetch(texture_map, coord, 0).r);
 
 		//vec4 actual_origin = vec4(origin.xy - vec2(2, 1), origin.zw);
-		outputSequence(origin, 15);
+		outputSequence(origin, 5);
 
 	}
 
@@ -645,10 +676,10 @@ Texture2D generateMapTexture(ref in Height[GridSize][GridSize] cells) {
 		mipmapMaxLevel : 0
 	};
 
-	Texture2D new_texture;
-	auto texture_result = Texture2D.create(new_texture, cast(ubyte*)cells.ptr, GridSize, GridSize, params);
+	Texture2D newTexture;
+	auto textureResult = Texture2D.create(newTexture, cast(ubyte*)cells.ptr, GridSize, GridSize, params);
 
-	return new_texture;
+	return newTexture;
 
 } // generateMapTexture
 
@@ -676,20 +707,20 @@ void main() {
 	}
 
 	// framebuffer texture
-	Texture2D fb_texture;
+	Texture2D fbTexture;
 	TextureParams params = {
 		internalFormat : InternalTextureFormat.RGB,
 		pixelFormat : PixelFormat.RGB
 	};
-	auto fb_tex_result = Texture2D.create(fb_texture, cast(ubyte*)null, window.width, window.height, params);
+	auto fb_tex_result = Texture2D.create(fbTexture, cast(ubyte*)null, window.width, window.height, params);
 
 	// create fb with texture	
 	SimpleFramebuffer sfb;
-	auto sfb_result = fb_texture.asSurface(sfb, false);
+	auto sfbResult = fbTexture.asSurface(sfb, false);
 
 	// texture shader stuff
-	TextureShader tex_shader;
-	auto tex_shader_result = TextureShader.compile(tex_shader, &ts_vs, &ts_fs);
+	TextureShader texShader;
+	auto texShaderResult = TextureShader.compile(texShader, &ts_vs, &ts_fs);
 
 	int w = window.width;
 	int h = window.height;
@@ -704,11 +735,11 @@ void main() {
 	];
 
 	auto vertex_data = VertexData(vertices);
-	auto tex_vao = TextureVao.upload(vertex_data, DrawPrimitive.Triangles);
+	auto texVao = TextureVao.upload(vertex_data, DrawPrimitive.Triangles);
 
 	// load graphics and stuff
-	MapShader map_shader;
-	auto shader_result = MapShader.compile(map_shader, &ms_vs, &ms_gs, &ms_fs);
+	MapShader mapShader;
+	auto shader_result = MapShader.compile(mapShader, &ms_vs, &ms_gs, &ms_fs);
 	auto map_texture = generateMapTexture(grid); 
 	
 	// check validity
@@ -728,14 +759,14 @@ void main() {
 		cur_x = 0;
 	}
 
-	auto map_data = MapData(cast(Vec2f[])grid_positions);
+	auto mapData = MapData(cast(Vec2f[])grid_positions);
 
 	// now, upload vertices
-	auto vao = MapVao.upload(map_data, DrawPrimitive.Points);
+	auto vao = MapVao.upload(mapData, DrawPrimitive.Points);
 
 	// set up projection
 	Mat4f projection = orthographic(0.0f, window.width, window.height, 0.0f, 0.0f, 1.0f);
-	auto transposed_projection = transpose(projection);
+	auto transposedProjection = transpose(projection);
 
 	while (window.isAlive) {
 
@@ -748,16 +779,16 @@ void main() {
 		}
 
 		// default state, holds all OpenGL state params like blend state etc to be use for given draw call
-		DrawParams draw_params = {};
+		DrawParams drawParams = {};
 
 		sfb.clearColour(0xffa500);
 
-		auto map_uniform = MapUniform(&map_texture);
-		sfb.draw(map_shader, vao, draw_params, map_uniform);
+		auto mapUniform = MapUniform(&map_texture);
+		sfb.draw(mapShader, vao, drawParams, mapUniform);
 
 		// cornflower blue, of course
-		auto tex_uniform = TextureUniform(&fb_texture);
-		device.draw(tex_shader, tex_vao, draw_params, tex_uniform);
+		auto texUniform = TextureUniform(&fbTexture);
+		device.draw(texShader, texVao, drawParams, texUniform);
 
 		device.present();
 
