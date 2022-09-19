@@ -84,28 +84,40 @@ float[4][4] orthographic(float left, float right, float bottom, float top, float
 */
 struct Transform {
 
-	Vec2f position;
-	Vec3f rotation;
-	Vec2f scale;
+	private {
+		
+		Vec2f position_;
+		Vec3f rotation_;
+		Vec2f scale_;
+		Vec3f origin_;
 
-	Vec3f origin;
+	}
 
 	this(in Vec2f pos, in Vec3f rotation = Vec3f(0.0f, 0.0f, 0.0f), in Vec2f scale = Vec2f(1.0f, 1.0f)) nothrow @nogc {
-		this.position = pos;
-		this.rotation = rotation;
-		this.scale = scale;
-		this.origin = Vec3f(0.0f, 0.0f, 0.0f);
+		this.position_ = pos;
+		this.rotation_ = rotation;
+		this.scale_ = scale;
+		this.origin_ = Vec3f(0.0f, 0.0f, 0.0f);
 	} // this
+
+	@property void scale(float newScale) {
+		scale_.x = newScale;
+		scale_.y = newScale;
+	} // scale
+
+	@property float scale() {
+		return scale_.x;
+	} // scale
 
 	@property Mat4f transform() const nothrow @nogc {
 
-		Mat4f originMatrix = Mat4f.translation(origin);
-		Mat4f posMatrix = Mat4f.translation(Vec3f(position, 0.0f) - origin);
+		Mat4f originMatrix = Mat4f.translation(origin_);
+		Mat4f posMatrix = Mat4f.translation(Vec3f(position_, 0.0f) - origin_);
 
-		Mat4f rotXMatrix = Mat4f.rotation(rotation.x, Vec3f(1, 0, 0));
-		Mat4f rotYMatrix = Mat4f.rotation(rotation.y, Vec3f(0, 1, 0));
-		Mat4f rotZMatrix = Mat4f.rotation(rotation.z, Vec3f(0, 0, 1));
-		Mat4f scaleMatrix = Mat4f.scaling(Vec3f(scale, 1.0f));
+		Mat4f rotXMatrix = Mat4f.rotation(rotation_.x, Vec3f(1, 0, 0));
+		Mat4f rotYMatrix = Mat4f.rotation(rotation_.y, Vec3f(0, 1, 0));
+		Mat4f rotZMatrix = Mat4f.rotation(rotation_.z, Vec3f(0, 0, 1));
+		Mat4f scaleMatrix = Mat4f.scaling(Vec3f(scale_, 1.0f));
 
 		Mat4f rotMatrix = rotXMatrix * rotYMatrix * rotZMatrix;
 

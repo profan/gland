@@ -8,6 +8,8 @@ import gland.util;
 import gland.win;
 import gland.gl;
 
+import gfm.math;
+
 immutable char* ms_vs = q{
 	#version 330 core
 
@@ -26,10 +28,11 @@ immutable char* ms_gs = q{
 	layout (triangle_strip, max_vertices = 6) out;
 
 	uniform sampler2D texture_map;
+	uniform mat4 projection;
 
 	out vec4 gs_colour;
 
-	void march_squares(vec4 origin, int which) {
+	void march_squares(mat4 transform, vec4 origin, int which) {
 
 		switch (which) {
 
@@ -44,15 +47,15 @@ immutable char* ms_gs = q{
 			case 1: {
 
 				vec4 offset_1 = vec4(0.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.5, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				EndPrimitive();
@@ -69,15 +72,15 @@ immutable char* ms_gs = q{
 			case 2: {
 
 				vec4 offset_1 = vec4(1.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(1.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.5, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				EndPrimitive();
@@ -94,19 +97,19 @@ immutable char* ms_gs = q{
 			case 3: {
 
 				vec4 offset_1 = vec4(0.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(1.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(1.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				EndPrimitive();
@@ -123,15 +126,15 @@ immutable char* ms_gs = q{
 			case 4: {
 
 				vec4 offset_1 = vec4(1.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.5, 0.0, 0.0, 1.0);
-				gl_Position  = origin + offset_2;
+				gl_Position  = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(1.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				EndPrimitive();
@@ -148,27 +151,27 @@ immutable char* ms_gs = q{
 			case 5: {
 
 				vec4 offset_1 = vec4(0.5, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_1_mid = vec4(1.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_1_mid;
+				gl_Position = transform * (origin + offset_1_mid);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(0.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(1.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3_mid = vec4(0.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_3_mid;
+				gl_Position = transform * (origin + offset_3_mid);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.5, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				EndPrimitive();
@@ -185,19 +188,19 @@ immutable char* ms_gs = q{
 			case 6: {
 
 				vec4 offset_1 = vec4(0.5, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.5, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(1.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(1.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				EndPrimitive();
@@ -214,23 +217,23 @@ immutable char* ms_gs = q{
 			case 7: {
 				
 				vec4 offset_1 = vec4(1.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.5, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(1.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(0.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				vec4 offset_5 = vec4(0.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_5;
+				gl_Position = transform * (origin + offset_5);
 				EmitVertex();
 
 				EndPrimitive();
@@ -247,15 +250,15 @@ immutable char* ms_gs = q{
 			case 8: {
 
 				vec4 offset_1 = vec4(0.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.5, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				EndPrimitive();
@@ -272,19 +275,19 @@ immutable char* ms_gs = q{
 			case 9: {
 
 				vec4 offset_1 = vec4(0.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.5, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(0.5, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				EndPrimitive();
@@ -301,27 +304,27 @@ immutable char* ms_gs = q{
 			case 10: {
 
 				vec4 offset_1 = vec4(0.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_1_mid = vec4(0.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_1_mid;
+				gl_Position = transform * (origin + offset_1_mid);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.5, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.5, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				vec4 offset_3_mid = vec4(1.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_3_mid;
+				gl_Position = transform * (origin + offset_3_mid);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(1.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				EndPrimitive();
@@ -338,23 +341,23 @@ immutable char* ms_gs = q{
 			case 11: {
 
 				vec4 offset_1 = vec4(0.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.5, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(1.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				vec4 offset_5 = vec4(1.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_5;
+				gl_Position = transform * (origin + offset_5);
 				EmitVertex();
 
 				EndPrimitive();
@@ -371,19 +374,19 @@ immutable char* ms_gs = q{
 			case 12: {
 
 				vec4 offset_1 = vec4(0.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(1.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(1.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				EndPrimitive();
@@ -400,23 +403,23 @@ immutable char* ms_gs = q{
 			case 13: {
 
 				vec4 offset_1 = vec4(0.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.5, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(0.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(1.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				vec4 offset_5 = vec4(1.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_5;
+				gl_Position = transform * (origin + offset_5);
 				EmitVertex();
 
 				EndPrimitive();
@@ -433,23 +436,23 @@ immutable char* ms_gs = q{
 			case 14: {
 
 				vec4 offset_1 = vec4(1.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(1.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(0.0, -0.5, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				vec4 offset_5 = vec4(0.5, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_5;
+				gl_Position = transform * (origin + offset_5);
 				EmitVertex();
 
 				EndPrimitive();
@@ -466,19 +469,19 @@ immutable char* ms_gs = q{
 			case 15: {
 				
 				vec4 offset_1 = vec4(0.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_1;
+				gl_Position = transform * (origin + offset_1);
 				EmitVertex();
 
 				vec4 offset_2 = vec4(0.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_2;
+				gl_Position = transform * (origin + offset_2);
 				EmitVertex();
 
 				vec4 offset_3 = vec4(1.0, 0.0, 0.0, 1.0);
-				gl_Position = origin + offset_3;
+				gl_Position = transform * (origin + offset_3);
 				EmitVertex();
 
 				vec4 offset_4 = vec4(1.0, -1.0, 0.0, 1.0);
-				gl_Position = origin + offset_4;
+				gl_Position =  transform * (origin + offset_4);
 				EmitVertex();
 
 				EndPrimitive();
@@ -511,13 +514,11 @@ immutable char* ms_gs = q{
 		int result = tl_bit | tr_bit | br_bit | bl_bit;
 
 		// pass colour over to fragment shader
-		gs_colour = result != 0
+		gs_colour = result != 0.0
 			? vec4(0.5, 0.0, 0.0, 1.0)
 			: vec4(0.0, 0.0, 0.0, 0.0);
 
-		vec4 actual_origin = vec4(origin.xy - vec2(2, 1), origin.zw);
-		vec4 adjusted_origin = vec4(actual_origin.xy / 2.0 - vec2(1.0, 0.5), actual_origin.zw);
-		march_squares(adjusted_origin, result);
+		march_squares(projection, origin, result);
 
 	}
 
@@ -535,8 +536,8 @@ immutable char* ms_fs = q{
 	}
 };
 
-alias Vec2f = float[2];
-alias Mat4f = float[4][4];
+alias Vec2f = Vector!(float, 2);
+alias Mat4f = Matrix!(float, 4, 4);
 
 enum GridSize = 8;
 alias Height = ubyte;
@@ -574,6 +575,8 @@ struct MapUniform {
 	@TextureUnit(0)
 	Texture2D* texture_map;
 
+	float[4][4][] projection;
+
 } // MapUniform
 
 alias MapShader = Shader!(
@@ -588,7 +591,7 @@ struct MapData {
 	@(DrawHint.StaticDraw)
 	@(BufferTarget.ArrayBuffer)
 	@VertexCountProvider
-	Vec2f[] positions;
+	float[2][] positions;
 
 } // MapData
 
@@ -738,7 +741,7 @@ void main() {
 
 	// position data
 	uint cur_x, cur_y;
-	Vec2f[GridSize][GridSize] gridPositions;
+	float[2][GridSize][GridSize] gridPositions;
 	foreach (y, row; gridPositions) {
 		foreach (x, col; row) {
 			gridPositions[y][x] = [cur_x++, cur_y];
@@ -747,16 +750,25 @@ void main() {
 		cur_x = 0;
 	}
 
-	auto mapData = MapData(cast(Vec2f[])gridPositions);
+	auto mapData = MapData(cast(float[2][])gridPositions);
 
 	// now, upload vertices
 	auto vao = MapVao.upload(mapData, DrawPrimitive.Points);
 
+	// scaling factor
+	auto unitsPerPixel = 128;
+
 	// set up projection
-	Mat4f projection = orthographic(0.0f, window.width, window.height, 0.0f, 0.0f, 1.0f);
-	auto transposedProjection = transpose(projection);
+	Mat4f screenProjection = Mat4f.orthographic(0.0f, window.width, window.height, 0.0f, 0.0f, 1.0f);
+
+	// set up camera projection with translation
+	auto camera = Transform(Vec2f(32.0f, 32.0f));
+	camera.scale = 16.0f;
 
 	while (window.isAlive) {
+
+		auto currentProjection = screenProjection * camera.transform();
+		auto transposedProjection = currentProjection.transposed();
 
 		// handle window events
 		window.handleEvents();
@@ -783,10 +795,13 @@ void main() {
 
 		sfb.clearColour(0xffa500);
 
-		auto mapUniform = MapUniform(&mapTexture);
+		// map is drawn to our framebuffer
+
+		float[4][4][1] projectionData = [*(cast(float[4][4]*)(transposedProjection.ptr))];
+		auto mapUniform = MapUniform(&mapTexture, projectionData[]);
 		sfb.draw(mapShader, vao, drawParams, mapUniform);
 
-		// cornflower blue, of course
+		// frame buffer texture is then rendered
 		auto texUniform = TextureUniform(&fbTexture);
 		device.draw(texShader, texVao, drawParams, texUniform);
 
