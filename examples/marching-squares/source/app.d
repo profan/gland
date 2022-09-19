@@ -656,7 +656,7 @@ struct VertexData {
 
 alias TextureVao = VertexArrayT!VertexData;
 
-Texture2D generateMapTexture(ref in Height[GridSize][GridSize] cells) {
+Texture2D generateMapTexture(in Height[][] cells, int width, int height) {
 
 	TextureParams params = {
 		internalFormat : InternalTextureFormat.R8,
@@ -668,7 +668,7 @@ Texture2D generateMapTexture(ref in Height[GridSize][GridSize] cells) {
 	};
 
 	Texture2D newTexture;
-	auto textureResult = Texture2D.create(newTexture, cast(ubyte*)cells.ptr, GridSize, GridSize, params);
+	auto textureResult = Texture2D.create(newTexture, cast(ubyte*)cells.ptr, width, height, params);
 
 	return newTexture;
 
@@ -731,7 +731,7 @@ void main() {
 	// load graphics and stuff
 	MapShader mapShader;
 	auto shaderResult = MapShader.compile(mapShader, &ms_vs, &ms_gs, &ms_fs);
-	auto mapTexture = generateMapTexture(grid);
+	auto mapTexture = generateMapTexture(cast(Height[][])grid, GridSize, GridSize);
 	
 	// check validity
 	if (shaderResult != MapShader.Error.Success) {
