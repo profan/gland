@@ -2,6 +2,7 @@ module gland.win;
 
 import core.stdc.stdio;
 import core.stdc.stdlib : exit;
+import std.functional : toDelegate;
 import std.typecons : tuple;
 
 import derelict.sdl2.sdl;
@@ -25,6 +26,9 @@ struct Window {
 
 		// keyboard state
 		ubyte* keyboard_;
+
+		// mouse state
+		bool[4] mouse_buttons_down_;
 
 	}
 
@@ -209,18 +213,29 @@ struct Window {
 
 	} // isKeyDown
 
+	bool isMouseButtonDown(Uint8 btn) {
+		return mouse_buttons_down_[btn];
+	} // isMouseButtonDown
+
 	nothrow @nogc
-	auto getMousePosition() {
+	int[2] getMousePosition() {
 
 		int x, y;
 		SDL_GetMouseState(&x, &y);
 
-		return tuple(x, y);
+		return [x, y];
 
 	} // getMousePosition
 
 	nothrow @nogc
-	void handleEvents() {
+	static void noOpHandler(ref SDL_Event ev) {
+
+	}
+	
+	alias DelegateType = nothrow @nogc void delegate(ref SDL_Event ev);
+
+	nothrow @nogc
+	void handleEvents(DelegateType handler = toDelegate(&noOpHandler)) {
 
 		SDL_Event ev;
 
@@ -228,11 +243,20 @@ struct Window {
 
 			switch (ev.type) {
 
+				case SDL_MOUSEBUTTONDOWN:
+					mouse_buttons_down_[ev.button.button] = true;
+					break;
+
+				case SDL_MOUSEBUTTONUP:
+					mouse_buttons_down_[ev.button.button] = false;
+					break;
+
 				case SDL_QUIT:
 					alive_ = false;
 					break;
 
 				default:
+					handler(ev);
 					break;
 
 			}
@@ -240,7 +264,6 @@ struct Window {
 		}
 
 	} // handleEvents
-
 
 	void setFullscreen() {
 

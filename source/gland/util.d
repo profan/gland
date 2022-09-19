@@ -85,12 +85,10 @@ float[4][4] orthographic(float left, float right, float bottom, float top, float
 struct Transform {
 
 	private {
-		
 		Vec2f position_;
 		Vec3f rotation_;
 		Vec2f scale_;
 		Vec3f origin_;
-
 	}
 
 	this(in Vec2f pos, in Vec3f rotation = Vec3f(0.0f, 0.0f, 0.0f), in Vec2f scale = Vec2f(1.0f, 1.0f)) nothrow @nogc {
@@ -99,6 +97,11 @@ struct Transform {
 		this.scale_ = scale;
 		this.origin_ = Vec3f(0.0f, 0.0f, 0.0f);
 	} // this
+
+	@property void scale(Vec2f newScale) {
+		scale_.x = newScale.x;
+		scale_.y = newScale.y;
+	} // scale
 
 	@property void scale(float newScale) {
 		scale_.x = newScale;

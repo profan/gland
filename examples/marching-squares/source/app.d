@@ -1,3 +1,4 @@
+import std.algorithm : move;
 import std.typecons : tuple;
 import std.stdio;
 import std.meta;
@@ -536,39 +537,11 @@ immutable char* ms_fs = q{
 	}
 };
 
+alias Vec2u = Vector!(uint, 2);
 alias Vec2f = Vector!(float, 2);
+alias Vec4f = Vector!(float, 4);
 alias Mat4f = Matrix!(float, 4, 4);
-
-enum GridSize = 8;
 alias Height = ubyte;
-
-immutable Height[GridSize][GridSize] grid = [
-	[
-		5, 10, 10, 10, 10, 10, 10, 5
-	],
-	[
-		10, 10, 15, 10, 10, 15, 10, 10
-	],
-	[
-		10, 15, 15, 15, 15, 15, 15, 10
-	],
-	[
-		10, 10, 15, 15, 15, 15, 10, 10
-	],
-	[
-		10, 10, 15, 15, 15, 15, 10, 10
-	],
-	[
-		10, 15, 15, 15, 15, 15, 15, 10
-	],
-	[
-		10, 10, 15, 10, 10, 15, 10, 10
-	],
-	[
-		5, 10, 10, 10, 10, 10, 10, 5
-	]
-
-];
 
 struct MapUniform {
 
@@ -656,7 +629,26 @@ struct VertexData {
 
 alias TextureVao = VertexArrayT!VertexData;
 
-Texture2D generateMapTexture(in Height[][] cells, int width, int height) {
+Height[] generateGrid(int width, int height, ubyte insideValue, ubyte outsideValue) {
+
+	bool isBoundary(int w, int h, int x, int y) {
+		return x <= 1 || y <= 2 || x >= (w - 1) || y >= (h - 1);
+	}
+
+	Height[] newGrid = new Height[width * height];
+
+	for (int x = 0; x < width; ++x)
+	{
+		for (int y = 0; y < height; ++y) {
+			newGrid[x + width * y] = isBoundary(width, height, x, y) ? outsideValue : insideValue;
+		}
+	}
+
+	return newGrid;
+
+}
+
+Texture2D generateMapTexture(in Height[] cells, int width, int height) {
 
 	TextureParams params = {
 		internalFormat : InternalTextureFormat.R8,
@@ -728,10 +720,15 @@ void main() {
 	auto vertex_data = VertexData(vertices);
 	auto texVao = TextureVao.upload(vertex_data, DrawPrimitive.Triangles);
 
+	// create our grid
+	auto backgroundGridWidth = 32;
+	auto backgroundGridHeight = 32;
+	auto backgroundGrid = generateGrid(backgroundGridWidth, backgroundGridHeight, 15, 5);
+
 	// load graphics and stuff
 	MapShader mapShader;
 	auto shaderResult = MapShader.compile(mapShader, &ms_vs, &ms_gs, &ms_fs);
-	auto mapTexture = generateMapTexture(cast(Height[][])grid, GridSize, GridSize);
+	auto mapTexture = generateMapTexture(backgroundGrid, backgroundGridWidth, backgroundGridHeight);
 	
 	// check validity
 	if (shaderResult != MapShader.Error.Success) {
@@ -739,31 +736,57 @@ void main() {
 		return; // exit now
 	}
 
-	// position data
+	// position data (points)
 	uint cur_x, cur_y;
-	float[2][GridSize][GridSize] gridPositions;
-	foreach (y, row; gridPositions) {
-		foreach (x, col; row) {
-			gridPositions[y][x] = [cur_x++, cur_y];
+	float[2][] gridPositions = new float[2][backgroundGridWidth * backgroundGridHeight];
+	for (int y = 0; y < backgroundGridHeight; ++y) {
+		for (int x = 0; x < backgroundGridWidth; ++x) {
+			gridPositions[x + backgroundGridWidth * y] = [cur_x++, cur_y];
 		}
 		cur_y++;
 		cur_x = 0;
 	}
 
+	// upload the list of positions to put points at that will be the GS input
 	auto mapData = MapData(cast(float[2][])gridPositions);
 
 	// now, upload vertices
 	auto vao = MapVao.upload(mapData, DrawPrimitive.Points);
 
-	// scaling factor
-	auto unitsPerPixel = 128;
-
 	// set up projection
 	Mat4f screenProjection = Mat4f.orthographic(0.0f, window.width, window.height, 0.0f, 0.0f, 1.0f);
 
 	// set up camera projection with translation
-	auto camera = Transform(Vec2f(32.0f, 32.0f));
-	camera.scale = 16.0f;
+	auto camera = Transform(Vec2f(0.0f, 0.0f));
+	camera.scale = Vec2f(
+		(window.width / cast(float)backgroundGridWidth) * 2.0f,
+		(window.height / cast(float)backgroundGridHeight) * 2.0f
+	);
+
+	Vec2f mouseToWorldPosition(float mouseX, float mouseY) {
+		auto worldPosition = camera.transform.inverse() * Vec4f(mouseX, mouseY, 0.0f, 1.0f);
+		return worldPosition.xy * 2.0f;
+	}
+
+	Vec2u mouseToGridPosition(float mouseX, float mouseY) {
+		auto worldPosition = mouseToWorldPosition(mouseX, mouseY);
+		return Vec2u(
+			cast(uint)worldPosition.x,
+			cast(uint)worldPosition.y
+		);
+	}
+
+	Vec2u currentMouseToGridPosition() {
+		auto mousePosition = window.getMousePosition();
+		return mouseToGridPosition(
+			mousePosition[0],
+			mousePosition[1]
+		);
+	}
+
+	Texture2D uploadTextureDataWithGrid() {
+		return generateMapTexture(backgroundGrid, backgroundGridWidth, backgroundGridHeight);
+	}
 
 	while (window.isAlive) {
 
@@ -772,6 +795,21 @@ void main() {
 
 		// handle window events
 		window.handleEvents();
+
+		// add to the grid on left mouse, remove on right
+		if (window.isMouseButtonDown(SDL_BUTTON_LEFT)) {
+			auto gridPosition = currentMouseToGridPosition();
+			backgroundGrid[gridPosition.x + backgroundGridWidth * gridPosition.y] = 15;
+			auto newMapTexture = uploadTextureDataWithGrid();
+			move(newMapTexture, mapTexture);
+		}
+
+		if (window.isMouseButtonDown(SDL_BUTTON_RIGHT)) {
+			auto gridPosition = currentMouseToGridPosition();
+			backgroundGrid[gridPosition.x + backgroundGridWidth * gridPosition.y] = 0;
+			auto newMapTexture = uploadTextureDataWithGrid();
+			move(newMapTexture, mapTexture);
+		}
 
 		// check if it's time to quit
 		if (window.isKeyDown(SDL_SCANCODE_ESCAPE)) {
