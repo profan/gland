@@ -11,7 +11,7 @@ import gland.gl;
 
 import gfm.math;
 
-immutable char* ms_vs = q{
+immutable char* msVs = q{
 	#version 330 core
 
 	layout (location = 0) in vec2 position;
@@ -22,7 +22,7 @@ immutable char* ms_vs = q{
 
 };
 
-immutable char* ms_gs = q{
+immutable char* msGs = q{
 	#version 330 core
 
 	layout (points) in;
@@ -482,7 +482,7 @@ immutable char* ms_gs = q{
 				EmitVertex();
 
 				vec4 offset_4 = vec4(1.0, -1.0, 0.0, 1.0);
-				gl_Position =  transform * (origin + offset_4);
+				gl_Position = transform * (origin + offset_4);
 				EmitVertex();
 
 				EndPrimitive();
@@ -525,7 +525,7 @@ immutable char* ms_gs = q{
 
 };
 
-immutable char* ms_fs = q{
+immutable char* msFs = q{
 	#version 330 core
 
 	in vec4 gs_colour;
@@ -570,7 +570,7 @@ struct MapData {
 
 alias MapVao = VertexArrayT!MapData;
 
-immutable char* ts_vs = q{
+immutable char* tsVS = q{
 	#version 330 core
 
 	layout (location = 0) in vec2 position;
@@ -584,7 +584,7 @@ immutable char* ts_vs = q{
 	}
 };
 
-immutable char* ts_fs = q{
+immutable char* tsFs = q{
 	#version 330 core
 
 	in vec2 tex_coord;
@@ -695,7 +695,7 @@ void main() {
 		internalFormat : InternalTextureFormat.RGB,
 		pixelFormat : PixelFormat.RGB
 	};
-	auto fb_tex_result = Texture2D.create(fbTexture, cast(ubyte*)null, window.width, window.height, params);
+	auto fbTexResult = Texture2D.create(fbTexture, cast(ubyte*)null, window.width, window.height, params);
 
 	// create fb with texture	
 	SimpleFramebuffer sfb;
@@ -703,7 +703,7 @@ void main() {
 
 	// texture shader stuff
 	TextureShader texShader;
-	auto texShaderResult = TextureShader.compile(texShader, &ts_vs, &ts_fs);
+	auto texShaderResult = TextureShader.compile(texShader, &tsVS, &tsFs);
 
 	int w = window.width;
 	int h = window.height;
@@ -727,7 +727,7 @@ void main() {
 
 	// load graphics and stuff
 	MapShader mapShader;
-	auto shaderResult = MapShader.compile(mapShader, &ms_vs, &ms_gs, &ms_fs);
+	auto shaderResult = MapShader.compile(mapShader, &msVs, &msGs, &msFs);
 	auto mapTexture = generateMapTexture(backgroundGrid, backgroundGridWidth, backgroundGridHeight);
 	
 	// check validity
@@ -737,14 +737,14 @@ void main() {
 	}
 
 	// position data (points)
-	uint cur_x, cur_y;
+	uint curX, curY;
 	float[2][] gridPositions = new float[2][backgroundGridWidth * backgroundGridHeight];
 	for (int y = 0; y < backgroundGridHeight; ++y) {
 		for (int x = 0; x < backgroundGridWidth; ++x) {
-			gridPositions[x + backgroundGridWidth * y] = [cur_x++, cur_y];
+			gridPositions[x + backgroundGridWidth * y] = [curX++, curY];
 		}
-		cur_y++;
-		cur_x = 0;
+		curY++;
+		curX = 0;
 	}
 
 	// upload the list of positions to put points at that will be the GS input
@@ -784,7 +784,7 @@ void main() {
 		);
 	}
 
-	Texture2D uploadTextureDataWithGrid() {
+	Texture2D processAndUploadTextureDataWithGrid() {
 		return generateMapTexture(backgroundGrid, backgroundGridWidth, backgroundGridHeight);
 	}
 
@@ -800,14 +800,14 @@ void main() {
 		if (window.isMouseButtonDown(SDL_BUTTON_LEFT)) {
 			auto gridPosition = currentMouseToGridPosition();
 			backgroundGrid[gridPosition.x + backgroundGridWidth * gridPosition.y] = 15;
-			auto newMapTexture = uploadTextureDataWithGrid();
+			auto newMapTexture = processAndUploadTextureDataWithGrid();
 			move(newMapTexture, mapTexture);
 		}
 
 		if (window.isMouseButtonDown(SDL_BUTTON_RIGHT)) {
 			auto gridPosition = currentMouseToGridPosition();
 			backgroundGrid[gridPosition.x + backgroundGridWidth * gridPosition.y] = 0;
-			auto newMapTexture = uploadTextureDataWithGrid();
+			auto newMapTexture = processAndUploadTextureDataWithGrid();
 			move(newMapTexture, mapTexture);
 		}
 
