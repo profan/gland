@@ -98,6 +98,14 @@ struct Transform {
 		this.origin_ = Vec3f(0.0f, 0.0f, 0.0f);
 	} // this
 
+	@property ref Vec2f position() return {
+		return position_;
+	}
+
+	@property ref Vec3f rotation() return {
+		return rotation_;
+	}
+
 	@property void scale(Vec2f newScale) {
 		scale_.x = newScale.x;
 		scale_.y = newScale.y;

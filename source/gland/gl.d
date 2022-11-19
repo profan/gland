@@ -461,7 +461,7 @@ struct ComputeShader {
 	} // compute
 
 	@property
-	ref GLuint handle() {
+	ref GLuint handle() return {
 		return handle_;
 	} // handle
 
